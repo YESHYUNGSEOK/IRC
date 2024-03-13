@@ -17,7 +17,7 @@ SRC_DIR = src
 SRC = main.cpp IoHandler.cpp Client.cpp
 OBJ = ${SRC:.cpp=.o}
 OBJ_DIR = obj
-INCLUDE = Ft_Irc.hpp IoHandler.hpp Client.hpp
+INCLUDE = ft_irc.hpp IoHandler.hpp Client.hpp
 INCLUDE_DIR = include
 
 all:	${NAME}
