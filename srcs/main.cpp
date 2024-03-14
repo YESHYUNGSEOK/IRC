@@ -6,6 +6,7 @@ int main(int argc, char **argv) {
         std::string password = argv[2];
 
 		Server server(port, password); // 서버 객체 생성 및 초기화
+
 		server.run(); // 서버 실행
 
         return EXIT_SUCCESS;

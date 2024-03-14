@@ -7,8 +7,11 @@
 #include <netinet/in.h> // 인터넷 프로토콜을 위한 헤더 파일
 #include <unistd.h> // 유닉스 표준 함수를 위한 헤더 파일
 
+#include "ClientManager.hpp"
+
 #define ERROR -1 // 에러 상수를 정의
-#define MAX_CLIENTS 5 // 최대 클라이언트 수를 정의
+#define MAX_CLIENTS 5 // 최대 연결 클라이언트 수를 정의
+#define BUF_SIZE 1024 // 버퍼 크기를 정의
 
 #define CYAN "\033[36m"
 #define RED "\033[31m"
@@ -23,6 +26,8 @@ class Server {
 		std::string password;
 		struct sockaddr_in serv_addr;
 		fd_set current_sockets, ready_sockets;
+
+		ClientManager client_manager;
 
 		void serv_addr_init(); // 서버 주소 정보 초기화 함수
 		void socket_init(); // 소켓 초기화 함수. listen까지 수행
