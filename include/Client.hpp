@@ -3,27 +3,26 @@
 #define CLIENT_HPP
 
 #include "ft_irc.hpp"
+#include "SocketStream.hpp"
 
 class Client
 {
 private:
-	int _fd;
-	struct sockaddr_in _client_addr;
-	socklen_t _client_addr_len;
-	// IoHandler &_io_handler;
+	// const int _fd;
+	// const struct sockaddr_in _client_addr;
+	// const socklen_t _client_addr_len;
+	SocketStream &_stream;
 
 	Client();
 	Client(const Client &src);
 	Client &operator=(const Client &src);
 
 public:
-	Client(int fd, struct sockaddr_in addr);
+	Client(int server_fd);
 	~Client();
 
-	int get_fd() const
-	{
-		return _fd;
-	}
+	int get_fd() const;
+	std::string get_msg();
 	void broadcast(const int origin_fd, const std::string &msg);
 };
 
