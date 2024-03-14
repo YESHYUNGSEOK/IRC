@@ -82,6 +82,7 @@ void Server::run() {
         for (int i = 0; i <= max_fd; i++) { // 준비된 모든 파일 디스크립터 확인
             if (FD_ISSET(i, &ready_sockets)) { // 파일 디스크립터가 준비되었는지 확인
                 if (i == sockfd) { // 새로운 연결 요청이면
+					std::cout << YELLOW << SERVER_PREFIX << "New connection request :-)" << RESET << std::endl;
                     struct sockaddr_in cli_addr; // 클라이언트 주소 정보 구조체
                     socklen_t clilen = sizeof(cli_addr); // 주소 정보의 크기
                     int newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen); // 연결 수락
@@ -91,7 +92,6 @@ void Server::run() {
                     }
                     FD_SET(newsockfd, &current_sockets); // 새 소켓을 파일 디스크립터 세트에 추가
                     max_fd = std::max(max_fd, newsockfd); // 최대 파일 디스크립터 번호 업데이트
-					send(newsockfd, "Enter your nickname: ", 21, 0); // 패스워드 입력 요청
                 } else { // 기존 연결에서 데이터가 도착한 경우
                     char buffer[1024]; // 데이터 수신을 위한 버퍼
                     int nbytes = read(i, buffer, sizeof(buffer)); // 데이터 읽기

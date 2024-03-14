@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
 
         return EXIT_SUCCESS;
     } else {
-        std::cout << "Correct usage is ./ircserv [port] [password]" << std::endl;
+        std::cout << YELLOW << "[ERROR] Correct usage is ./ircserv [port] [password]" << RESET << std::endl;
         return EXIT_FAILURE;
     }
 }

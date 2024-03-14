@@ -12,6 +12,7 @@
 
 #define CYAN "\033[36m"
 #define RED "\033[31m"
+#define YELLOW "\033[33m"
 #define RESET "\033[0m"
 #define SERVER_PREFIX "[SERVER] "
 
