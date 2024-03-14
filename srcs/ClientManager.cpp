@@ -24,8 +24,5 @@ std::string ClientManager::get_nickname(int sockfd) {
 }
 
 void ClientManager::remove_client(int sockfd) {
-	std::string nickname = clients[sockfd].nickname;
 	clients.erase(sockfd);
-
-	std::cout << PINK << CLIENT_PREFIX << nickname << " quit the server" << RESET << std::endl;
 }

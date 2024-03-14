@@ -82,25 +82,12 @@ void Server::run() {
         for (int i = 0; i <= max_fd; i++) { // 준비된 모든 파일 디스크립터 확인
             if (FD_ISSET(i, &ready_sockets)) { // 파일 디스크립터가 준비되었는지 확인
                 if (i == sockfd) { // 새로운 연결 요청이면
-					std::cout << CYAN << SERVER_PREFIX << "New connection request!" << RESET << std::endl;
-                    struct sockaddr_in cli_addr; // 클라이언트 주소 정보 구조체
-                    socklen_t clilen = sizeof(cli_addr); // 주소 정보의 크기
-                    int newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen); // 연결 수락
-                    if (newsockfd == ERROR) { // 연결 수락 실패 시
-                        std::cerr << "Error on accept" << std::endl;
-                        continue; // 다음 반복으로 넘어감
-                    }
-                    FD_SET(newsockfd, &current_sockets); // 새 소켓을 파일 디스크립터 세트에 추가
-                    max_fd = std::max(max_fd, newsockfd); // 최대 파일 디스크립터 번호 업데이트
-                    client_manager.add_client(newsockfd, cli_addr); // 클라이언트 매니저에 클라이언트 추가
-                    write(newsockfd, "Welcome! Please enter your nickname ;)\n", 39); // 닉네임 설정 요청
+                    add_client(sockfd, &max_fd); // 클라이언트 추가
                 } else { // 기존 연결에서 데이터가 도착한 경우
                     char buffer[BUF_SIZE]; // 데이터 수신을 위한 버퍼
                     int nbytes = read(i, buffer, sizeof(buffer)); // 데이터 읽기
                     if (nbytes <= 0) { // 읽기 실패 또는 연결 종료
-                        close(i); // 소켓 닫기
-                        FD_CLR(i, &current_sockets); // 세트에서 소켓 제거
-                        client_manager.remove_client(i); // 클라이언트 매니저에서 제거
+                        remove_client(i); // 클라이언트 제거
                     } else if (client_manager.get_nickname(i) == "Anonymous") { // 닉네임이 설정되지 않은 경우
                         client_manager.set_nickname(i, std::string(buffer, nbytes - 1)); // 닉네임 설정, -1은 개행 지우기 위함
                     } else {
@@ -116,4 +103,32 @@ void Server::run() {
             }
         }
     }
+}
+
+void Server::add_client(int sockfd, int *max_fd) {
+	std::cout << CYAN << SERVER_PREFIX << "New connection request!" << RESET << std::endl;
+
+    struct sockaddr_in cli_addr; // 클라이언트 주소 정보 구조체
+    socklen_t clilen = sizeof(cli_addr); // 주소 정보의 크기
+    int newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen); // 연결 수락
+    if (newsockfd == ERROR) { // 연결 수락 실패 시
+        std::cerr << "Error on accept" << std::endl;
+        return; // 다음 반복으로 넘어감
+    }
+    FD_SET(newsockfd, &current_sockets); // 새 소켓을 파일 디스크립터 세트에 추가
+    *max_fd = std::max(*max_fd, newsockfd); // 최대 파일 디스크립터 번호 업데이트
+
+    client_manager.add_client(newsockfd, cli_addr); // 클라이언트 매니저에 클라이언트 추가
+    
+    write(newsockfd, "Welcome! Please enter your nickname ;)\n", 39); // 닉네임 설정 요청
+}
+
+void Server::remove_client(int sockfd) {
+    std::string nickname = client_manager.get_nickname(sockfd);
+
+    close(sockfd); // 소켓 닫기
+    FD_CLR(sockfd, &current_sockets); // 세트에서 소켓 제거
+    client_manager.remove_client(sockfd);
+
+    std::cout << CYAN << SERVER_PREFIX << nickname << " quit the server" << RESET << std::endl;
 }

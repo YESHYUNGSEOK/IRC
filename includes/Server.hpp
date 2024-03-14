@@ -40,6 +40,10 @@ class Server {
 		std::string get_password();
 		sockaddr_in get_serv_addr();
 		void run(); // 멀티플렉싱을 이용한 서버 실행 함수
+
+		// 클라이언트 관리
+		void add_client(int sockfd, int *max_fd);
+		void remove_client(int sockfd);
 };
 
 #endif
