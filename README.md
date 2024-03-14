@@ -146,6 +146,10 @@ quit message가 없이 연결이 종료되면 사유에 맞게 적절한 기본 
 - `ERR_BADCHANMASK`
 - `ERR_NOSUCHCHANNEL`
 
+클라이언트가 채널에 참여할 때 채널이 없으면 채널을 생성.
+클라이언트가 채널에 참여할 때 채널이 있으면 채널에 참여.
+
+
 ### PART
 
 - 채널에서 나갑니다.
@@ -153,6 +157,7 @@ quit message가 없이 연결이 종료되면 사유에 맞게 적절한 기본 
 - `ERR_NEEDMOREPARAMS`
 - `ERR_NOSUCHCHANNEL`
 - `ERR_NOTONCHANNEL`
+
 
 ### MODE
 
