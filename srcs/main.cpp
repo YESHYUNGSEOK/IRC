@@ -6,7 +6,7 @@
 
 #define ERROR -1 // 에러 상수를 정의
 
-int main(int argc, char **argv) { // 메인 함수 시작
+int main(int argc, char **argv) {
     if (argc == 3) { // 인자의 개수가 정확히 3개인지 확인 (프로그램 이름, 포트, 패스워드)
         int port = std::stoi(argv[1]); // 첫 번째 인자(포트 번호)를 정수로 변환
         std::string password = argv[2]; // 두 번째 인자(패스워드)를 문자열로 저장
@@ -64,13 +64,18 @@ int main(int argc, char **argv) { // 메인 함수 시작
                             close(i); // 소켓 닫기
                             FD_CLR(i, &current_sockets); // 세트에서 소켓 제거
                         } else {
-                            write(i, buffer, nbytes); // 에코: 받은 데이터를 클라이언트에게 다시 보냄
+							for (int j = 0; j <= max_fd; j++) {
+								if (j != i && FD_ISSET(j, &current_sockets)) { 
+                            		if (write(j, buffer, nbytes) == ERROR) { // 받은 데이터를 다른 소켓에 전송
+										std::cerr << "Error on write" << std::endl;
+									}	
+								}
+							}
                         }
                     }
                 }
             }
         }
-
         close(sockfd); // 서버 소켓 닫기
         return EXIT_SUCCESS; // 성공적으로 프로그램 종료
     } else {
