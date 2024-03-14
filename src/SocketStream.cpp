@@ -29,8 +29,9 @@ SocketStream &SocketStream::operator<<(const std::string &data)
 SocketStream &SocketStream::operator>>(std::string &data)
 {
   char buffer[1024];
-  const int size = recv(_fd, buffer, sizeof(buffer), 0);
-  if (size < 0)
+  const int size = recv(_fd, buffer, sizeof(buffer) - 1, 0);
+  std::cout << "size: " << size << std::endl;
+  if (size < 0 && errno != ECONNRESET)
     throw std::runtime_error("recv() failed: " + std::string(strerror(errno)));
   else if (size == 0)
     // 연결이 끊어졌을 때의 처리
