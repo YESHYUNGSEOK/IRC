@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
         while (true) { // 무한 루프
             ready_sockets = current_sockets; // ready_sockets를 current_sockets로 복사
-            if (select(max_fd + 1, &ready_sockets, nullptr, nullptr, nullptr) == ERROR) { // 준비된 소켓 검사
+            if (select(max_fd + 1, &ready_sockets, nullptr, nullptr, nullptr) == ERROR) { // 준비된 소켓 검사. 변화 없으면 블로킹
                 std::cerr << "Error on select" << std::endl;
                 return EXIT_FAILURE; // select 실패 시 오류 메시지 출력 후 종료
             }
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
                             FD_CLR(i, &current_sockets); // 세트에서 소켓 제거
                         } else {
 							for (int j = 0; j <= max_fd; j++) {
-								if (j != i && FD_ISSET(j, &current_sockets)) { 
+								if (j != i && j != sockfd && FD_ISSET(j, &current_sockets)) { 
                             		if (write(j, buffer, nbytes) == ERROR) { // 받은 데이터를 다른 소켓에 전송
 										std::cerr << "Error on write" << std::endl;
 									}	
