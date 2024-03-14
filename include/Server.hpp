@@ -9,7 +9,6 @@
 #include <list>
 #include "ft_irc.hpp"
 #include "Client.hpp"
-// #include "IoHandler.hpp"
 
 class Server
 {
@@ -21,7 +20,7 @@ private:
 	fd_set _master;
 	struct sockaddr_in _addr;
 
-	std::list<Client *> _clients;
+	std::map<int, Client *> _clients;
 	// std::vector<struct sockaddr_in> _client_addrs;
 
 	Server();

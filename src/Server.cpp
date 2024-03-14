@@ -37,80 +37,44 @@ void Server::run()
 			throw std::runtime_error("select() failed: " + std::string(strerror(errno)));
 		else if (event > 0)
 		{
-			std::cout << "Event: " << event << std::endl;
-			if (FD_ISSET(_server_fd, &read_fds))
-				accept_new_client();
-			// 2중 for문을 사용하지 않고 클라이언트를 순회하면서 이벤트를 처리하고싶은데 몰?루
-			for (int client_fd = _server_fd + 1; client_fd < FD_SETSIZE; client_fd++)
-				if (FD_ISSET(client_fd, &read_fds))
+			std::cout << "[Server] Event count: " << event << std::endl;
+			for (int i = 0; i < FD_SETSIZE; i++)
+			{
+				if (FD_ISSET(i, &read_fds)) // 이벤트가 발생한 파일 디스크립터
 				{
-					std::list<Client *>::iterator it = _clients.begin();
-					while (it != _clients.end())
-					{
-						if ((*it)->get_fd() == client_fd)
-						{
-							handle_client(*it);
-							break;
-						}
-						it++;
-					}
+					if (i == _server_fd) // 새로운 클라이언트가 연결되었을 때
+						accept_new_client();
+					else // 기존 클라이언트로부터 메시지를 받았을 때
+						handle_client(_clients[i]);
 				}
-			// for (std::list<Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
-			// {
-			// 	if (FD_ISSET((*it)->get_fd(), &read_fds))
-			// 		handle_client(*it);
-			// }
+			}
 		}
 	}
 }
 
 void Server::accept_new_client()
 {
-	struct sockaddr_in client_addr;
-	socklen_t client_addr_len = sizeof(client_addr);
-	int client_fd = accept(_server_fd, (struct sockaddr *)&client_addr, &client_addr_len);
-	if (client_fd < 0)
-		throw std::runtime_error("accept() failed: " + std::string(strerror(errno)));
-	if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0) // 소켓을 논블로킹으로 설정
-		throw std::runtime_error("fcntl() failed: " + std::string(strerror(errno)));
-	// 새로운 클라이언트를 _master에 추가
-	_clients.push_back(new Client(client_fd, client_addr));
-	FD_SET(client_fd, &_master);
-	std::cout << "Client " << client_fd << " connected" << std::endl;
+	Client *client = new Client(_server_fd);				   // 새로운 클라이언트 생성
+	FD_SET(client->get_fd(), &_master);						   // 새로운 클라이언트를 _master에 추가
+	_clients.insert(std::make_pair(client->get_fd(), client)); // 새로운 클라이언트를 _clients에 추가
 }
 
 void Server::handle_client(Client *client)
 {
-	char buf[1024];
-	int len = recv(client->get_fd(), buf, sizeof(buf), 0);
-	if (len < 0)
-	{
-		throw std::runtime_error("recv() failed: " + std::string(strerror(errno)));
-	}
-	else if (len == 0) // 클라이언트 소켓이 끊어졌을 때의 처리
+	// 클라이언트로부터 메시지를 받음
+	std::string msg = client->get_msg();
+
+	if (msg.length() == 0) // 클라이언트 소켓이 끊어졌을 때의 처리
 	{
 		FD_CLR(client->get_fd(), &_master);
-		std::cout << "Client " << client->get_fd() << " disconnected" << std::endl;
-		std::list<Client *>::iterator it = _clients.begin();
-		while (it != _clients.end())
-		{
-			if (*it == client)
-			{
-				_clients.erase(it);
-				break;
-			}
-		}
+		_clients.erase(client->get_fd());
 		delete client;
 	}
 	else
 	{
-		buf[len] = '\0';
-		std::string msg(buf);
-		std::cout << "Received from Client " << client->get_fd() << ": " << msg;
-
-		for (std::list<Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
-			if (*it != client)
-				(*it)->broadcast(client->get_fd(), msg);
+		for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
+			if (it->second != client)
+				it->second->broadcast(client->get_fd(), msg);
 	}
 }
 
