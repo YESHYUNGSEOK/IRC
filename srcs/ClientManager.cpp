@@ -9,14 +9,12 @@ ClientManager::~ClientManager() {
 }
 
 void ClientManager::add_client(int sockfd, struct sockaddr_in client_addr) {
-	clients[sockfd].nickname = "Anonymous";
+	clients[sockfd].nickname = ANONYMOUS;
 	clients[sockfd].client_addr = client_addr;
 }
 
 void ClientManager::set_nickname(int sockfd, std::string nickname) {
 	clients[sockfd].nickname = nickname;
-
-	std::cout << PINK << CLIENT_PREFIX << nickname << " entered the server" << RESET << std::endl;
 }
 
 std::string ClientManager::get_nickname(int sockfd) {

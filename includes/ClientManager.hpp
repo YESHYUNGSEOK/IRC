@@ -5,6 +5,8 @@
 #include <map>
 #include <netinet/in.h>
 
+#define ANONYMOUS "Anonymous"
+
 #define PINK "\033[35m"
 #define RESET "\033[0m"
 #define CLIENT_PREFIX "[CLIENT MANAGER] "

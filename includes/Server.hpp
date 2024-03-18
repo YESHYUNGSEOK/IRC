@@ -6,11 +6,11 @@
 #include <sys/socket.h> // 소켓 프로그래밍을 위한 헤더 파일
 #include <netinet/in.h> // 인터넷 프로토콜을 위한 헤더 파일
 #include <unistd.h> // 유닉스 표준 함수를 위한 헤더 파일
+#include <fcntl.h> // 파일 제어 함수를 위한 헤더 파일
 
 #include "ClientManager.hpp"
 
 #define ERROR -1 // 에러 상수를 정의
-#define MAX_CLIENTS 5 // 최대 연결 클라이언트 수를 정의
 #define BUF_SIZE 1024 // 버퍼 크기를 정의
 
 #define CYAN "\033[36m"
@@ -21,7 +21,7 @@
 
 class Server {
 	private:
-		int sockfd;
+		int server_sockfd;
 		int port;
 		std::string password;
 		struct sockaddr_in serv_addr;
@@ -44,6 +44,7 @@ class Server {
 		// 클라이언트 관리
 		void add_client(int sockfd, int *max_fd);
 		void remove_client(int sockfd);
+		void set_client_nickname(int sockfd, std::string nickname);
 };
 
 #endif
