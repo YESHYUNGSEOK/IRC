@@ -2,7 +2,7 @@
 
 std::string NumericReply::getNumericReplyERR(e_numeric numeric, Server &serv) {
 	std::string reply;
-	switch (numeric) {
+	switch (static_cast<int>(numeric)) {
 		case ERR_ALREADYREGISTRED:
 			break;
 		case ERR_BADCHANMASK:

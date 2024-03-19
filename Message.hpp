@@ -7,29 +7,25 @@
 # include "CommandHandler.hpp"
 
 class Message {
-	public:
-		Message(std::string &chunk);
-		~Message();
+public:
+	Message(std::string &chunk);
+	virtual ~Message();
 
-		const std::string		&get_prefix() const;
-		const std::string		&get_command() const;
-		const std::string		&get_middleParam() const;
-		const std::string		&get_trailingParam() const;
-		const bool				is_valid() const;
+	bool	parseMsg();
 
-	private:
-		bool					_is_valid;
-		std::string				_prefix;
-		e_cmd					_command;
-		std::string				_middleParam;
-		std::string				_trailingParam;
+	const std::string& get_prefix() const;
+	const e_cmd& get_command() const;
+	const std::vector<std::string>& get_params() const;
+	bool is_valid() const;
 
-		bool					check_crlf(std::string &chunk);
-		bool					check_prefix(std::string &chunk);
-		bool					check_command(std::string &chunk);
-		bool					check_param(std::string &chunk);
-		bool					check_middle_param(std::string &chunk);
-		bool					check_trailing_param(std::string &chunk);
+private:
+	bool	_is_valid;
+	std::string	_chunk;
+	std::string	_prefix;
+	e_cmd	_command;
+	std::vector<std::string>	_params;
+
+	bool	is_valid_command(const std::string &command);
 };
 
 # endif

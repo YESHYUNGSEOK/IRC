@@ -48,7 +48,6 @@ typedef enum NUMERIC {
     RPL_NAMREPLY = 353,
     RPL_NOTOPIC = 331,
     RPL_TOPIC = 332,
-    RPL_UMODEIS = 221,
     RPL_YOUREOPER = 381,
 } e_numeric;
 
