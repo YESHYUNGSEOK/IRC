@@ -1,24 +1,12 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: jbok <jbok@student.42seoul.kr>             +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2022/09/07 11:20:10 by jbok              #+#    #+#              #
-#    Updated: 2023/10/05 11:36:32 by jbok             ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
-
 NAME = ircserv
 CXX = c++
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -pedantic -g -fsanitize=address
-SRC_DIR = src
-SRC = main.cpp SocketStream.cpp Client.cpp Server.cpp
+SRC_DIR = srcs
+SRC = main.cpp SocketStream.cpp Client.cpp Server.cpp ClientManager.cpp CommandHandler.cpp
 OBJ = ${SRC:.cpp=.o}
-OBJ_DIR = obj
+OBJ_DIR = objs
 INCLUDE = ft_irc.hpp SocketStream.hpp Client.hpp Server.hpp
-INCLUDE_DIR = include
+INCLUDE_DIR = includes
 
 all:	${NAME}
 
