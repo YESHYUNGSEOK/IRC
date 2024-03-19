@@ -22,7 +22,10 @@ public:
 	~Client();
 
 	int get_fd() const;
-	std::string get_msg();
+	std::string read_buffer();				   // 연산자 오버로딩으로 변경해도 될 듯
+	void write_buffer(const std::string &msg); // 연산자 오버로딩으로 변경해도 될 듯
+	ssize_t recv();
+	ssize_t send();
 	void broadcast(const int origin_fd, const std::string &msg);
 };
 

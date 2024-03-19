@@ -11,6 +11,39 @@ Client::~Client()
 	delete &_stream;
 }
 
+int Client::get_fd() const
+{
+	return _stream.get_fd();
+}
+
+std::string Client::read_buffer()
+{
+	std::string msg;
+	_stream >> msg;
+	return msg;
+}
+
+void Client::write_buffer(const std::string &msg)
+{
+	_stream << msg;
+}
+
+ssize_t Client::recv()
+{
+	return _stream.recv();
+}
+
+ssize_t Client::send()
+{
+	return _stream.send();
+}
+
+void Client::broadcast(const int origin_fd, const std::string &msg)
+{
+	// 클라이언트에게 메시지를 전송
+	_stream << "Broadcast from Client " << std::to_string(origin_fd) << ": " << msg;
+}
+
 // 사용하지 않는 생성자
 Client::Client() : _stream(*new SocketStream())
 {
@@ -29,22 +62,4 @@ Client &Client::operator=(const Client &src)
 	std::cout << "[Client] assign operater called - need to fix" << std::endl;
 	_stream = *new SocketStream(src._stream);
 	return *this;
-}
-
-int Client::get_fd() const
-{
-	return _stream.get_fd();
-}
-
-std::string Client::get_msg()
-{
-	std::string msg;
-	_stream >> msg;
-	return msg;
-}
-
-void Client::broadcast(const int origin_fd, const std::string &msg)
-{
-	// 클라이언트에게 메시지를 전송
-	_stream << "Broadcast from Client " << std::to_string(origin_fd) << ": " << msg;
 }
