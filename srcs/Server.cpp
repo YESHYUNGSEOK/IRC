@@ -1,147 +1,134 @@
-#include "../includes/Server.hpp"
+#include "Server.hpp"
 
-Server::Server(int port, std::string password) : port(port), password(password) {
-    std::cout << CYAN << SERVER_PREFIX << "Server created with port: " << port << ", password: " << password << RESET << std::endl;
-    serv_addr_init();
-	socket_init();
-	fd_set_init();
+Server::Server(int port, int password) : _port(port), _password(password)
+{
+	// 소켓 생성 (IPv4, TCP)
+	_server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (_server_fd < 0)
+		throw std::runtime_error("socket() failed: " + std::string(strerror(errno)));
+
+	_addr.sin_family = AF_INET;			// IPv4
+	_addr.sin_addr.s_addr = INADDR_ANY; // Listen on all interfaces
+	_addr.sin_port = htons(_port);		// network byte order
+
+	// 소켓 바인딩
+	if (bind(_server_fd, (struct sockaddr *)&_addr, sizeof(_addr)) < 0)
+		throw std::runtime_error("bind() failed: " + std::string(strerror(errno)));
+
+	// fd_set 초기화
+	FD_ZERO(&_master_fds);
+	FD_ZERO(&_read_fds);
+	FD_ZERO(&_write_fds);
+
+	// 서버 소켓을 _master에 추가
+	FD_SET(_server_fd, &_master_fds);
 }
 
-Server::~Server() {
-	close(server_sockfd); // 서버 소켓 닫기
+void Server::run()
+{
+	if (fcntl(_server_fd, F_SETFL, O_NONBLOCK) < 0) // 소켓을 논블로킹으로 설정
+		throw std::runtime_error("fcntl() failed: " + std::string(strerror(errno)));
 
-    std::cout << CYAN << SERVER_PREFIX << "Server is closed" << RESET << std::endl;
-}
+	if (listen(_server_fd, SOMAXCONN) < 0) // SOMAXCONN은 시스템에서 지정한 최대 연결 수
+		throw std::runtime_error("listen() failed: " + std::string(strerror(errno)));
 
-int Server::get_sockfd() {
-	return server_sockfd;
-}
+	while (true)
+	{
+		// select()를 호출할 때마다 초기화
+		_read_fds = _master_fds;
+		_write_fds = _master_fds;
 
-int Server::get_port() {
-    return port;
-}
-
-std::string Server::get_password() {
-    return password;
-}
-
-sockaddr_in Server::get_serv_addr() {
-    return serv_addr;
-}
-
-void Server::serv_addr_init() {
-    std::memset(&serv_addr, 0, sizeof(serv_addr)); // 구조체를 0으로 초기화
-    serv_addr.sin_family = AF_INET; // 주소 체계를 IPv4로 설정
-    serv_addr.sin_addr.s_addr = INADDR_ANY; // 모든 인터페이스의 주소를 사용
-    serv_addr.sin_port = htons(port); // 호스트 바이트 순서를 네트워크 바이트 순서로 변환
-
-	std::cout << CYAN << SERVER_PREFIX << "Server address initialized" << RESET << std::endl;
-}
-
-void Server::socket_init() {
-	server_sockfd = socket(AF_INET, SOCK_STREAM, 0); // 소켓 생성
-
-	if (server_sockfd == ERROR) { // 소켓 생성 실패 시
-		std::cerr << RED << SERVER_PREFIX << "Error opening socket" << RESET << std::endl;
-		exit(EXIT_FAILURE); // 오류 메시지 출력 후 프로그램 종료
+		// select()는 이벤트가 발생한 파일 디스크립터의 개수를 반환
+		int event = select(FD_SETSIZE, &_read_fds, &_write_fds, NULL, NULL);
+		if (event < 0)
+			throw std::runtime_error("select() failed: " + std::string(strerror(errno)));
+		else if (event > 0)
+		{
+			// std::cout << "[Server] Event count: " << event << std::endl;
+			for (int i = 0; i < FD_SETSIZE; i++)
+			{
+				if (FD_ISSET(i, &_read_fds)) // read event
+				{
+					if (i == _server_fd) // 새로운 클라이언트 연결
+						accept_new_client();
+					else // 기존 클라이언트로부터 메시지를 받음
+						read_client(_clients[i]);
+				}
+				else if (FD_ISSET(i, &_write_fds)) // write event
+				{
+					if (i != _server_fd) // 버퍼 내용을 소켓에 쓰기
+						write_client(_clients[i]);
+				}
+			}
+		}
 	}
+}
 
-	if (bind(server_sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == ERROR) { // 소켓에 주소 할당
-		std::cerr << RED << SERVER_PREFIX << "Error on binding" << RESET << std::endl;
-		exit(EXIT_FAILURE); // 바인딩 실패 시 오류 메시지 출력 후 종료
+void Server::accept_new_client()
+{
+	Client *client = new Client(_server_fd);				   // 새로운 클라이언트 생성
+	FD_SET(client->get_fd(), &_master_fds);					   // 새로운 클라이언트를 _master에 추가
+	_clients.insert(std::make_pair(client->get_fd(), client)); // 새로운 클라이언트를 _clients에 추가
+}
+
+void Server::read_client(Client *client)
+{
+	// 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
+	const ssize_t recv_len = client->recv();
+
+	if (recv_len < 0) // 연결 종료
+	{
+		FD_CLR(client->get_fd(), &_master_fds);
+		_clients.erase(client->get_fd());
+		delete client;
+		return;
 	}
+	else if (recv_len == 0) // 연결 대기 중
+		return;
 
-    if (fcntl(server_sockfd, F_SETFL, O_NONBLOCK) == ERROR) { // 소켓을 논블로킹으로 설정
-        std::cerr << RED << SERVER_PREFIX << "Error on setting non-blocking" << RESET << std::endl;
-        exit(EXIT_FAILURE); // 논블로킹 설정 실패 시 오류 메시지 출력 후 종료
-    }
+	// 클라이언트의 버퍼로부터 데이터를 읽어들임 - 개행 단위로 처리를 위해 벡터로 변경될 예정
+	std::string msg = client->read_buffer();
 
-	if (listen(server_sockfd, SOMAXCONN) == ERROR) { // 연결 요청 대기열 생성
-		std::cerr << RED << SERVER_PREFIX << "Error on listening" << RESET << std::endl;
-		exit(EXIT_FAILURE); // 리스닝 실패 시 오류 메시지 출력 후 종료
+	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
+		if (it->second != client)
+			it->second->broadcast(client->get_fd(), msg);
+}
+
+void Server::write_client(Client *client)
+{
+	// 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
+	const ssize_t send_len = client->send();
+
+	if (send_len < 0) // 비정상적인 연결 종료
+	{
+		FD_CLR(client->get_fd(), &_master_fds);
+		_clients.erase(client->get_fd());
+		delete client;
+		return;
 	}
-
-	std::cout << CYAN << SERVER_PREFIX << "Server socket initialized" << RESET << std::endl;
+	else if (send_len == 0) // 버퍼에 남은 데이터가 없거나, 연결 대기 중
+		return;
 }
 
-void Server::fd_set_init() {
-	FD_ZERO(&current_sockets); // current_sockets 세트를 0으로 초기화
-	FD_SET(server_sockfd, &current_sockets); // 소켓 파일 디스크립터를 current_sockets 세트에 추가
-
-	std::cout << CYAN << SERVER_PREFIX << "File descriptor set initialized" << RESET << std::endl;
+Server::Server() : _port(0), _password(0), _server_fd(0)
+{
 }
 
-void Server::run() {
-	std::cout << CYAN << SERVER_PREFIX << "Server is running..." << RESET << std::endl;
-
-	int max_fd = server_sockfd; // 최대 파일 디스크립터 번호 초기화
-
- 	while (true) { // 무한 루프
-        ready_sockets = current_sockets; // ready_sockets를 current_sockets로 복사
-
-        if (select(max_fd + 1, &ready_sockets, nullptr, nullptr, nullptr) == ERROR) { // 준비된 소켓 검사. 변화 없으면 블로킹
-            std::cerr << CYAN << SERVER_PREFIX << "Error on select" << RESET << std::endl;
-            exit(EXIT_FAILURE); // select 실패 시 오류 메시지 출력 후 종료
-        }
-
-        for (int sockfd = 0; sockfd <= max_fd; sockfd++) { // 준비된 모든 파일 디스크립터 확인
-            if (FD_ISSET(sockfd, &ready_sockets)) { // 파일 디스크립터가 준비되었는지 확인
-                if (sockfd == server_sockfd) { // 새로운 연결 요청이면
-                    add_client(server_sockfd, &max_fd); // 클라이언트 추가
-                } else { // 기존 연결에서 데이터가 도착한 경우
-                    char buffer[BUF_SIZE]; // 데이터 수신을 위한 버퍼
-                    int nbytes = read(sockfd, buffer, sizeof(buffer)); // 데이터 읽기
-                    if (nbytes <= 0) { // 읽기 실패 또는 연결 종료
-                        remove_client(sockfd); // 클라이언트 제거
-                    } else if (client_manager.get_nickname(sockfd) == "Anonymous") { // 닉네임이 설정되지 않은 경우
-                        set_client_nickname(sockfd, std::string(buffer, nbytes - 1)); // 닉네임 설정, -1은 개행 지우기 위함
-                    } else {
-						for (int _sockfd = 0; _sockfd <= max_fd; _sockfd++) {
-							if (_sockfd != sockfd && _sockfd != server_sockfd && FD_ISSET(_sockfd, &current_sockets)) { 
-                        		if (write(_sockfd, buffer, nbytes) == ERROR) { // 받은 데이터를 다른 소켓에 전송
-									std::cerr << CYAN << SERVER_PREFIX <<  "Error on write" << RESET << std::endl;
-								}	
-							}
-						}
-                    }
-                }
-            }
-        }
-    }
+Server::Server(const Server &src) : _port(src._port), _password(src._password), _server_fd(src._server_fd)
+{
 }
 
-void Server::add_client(int sockfd, int *max_fd) {
-	std::cout << CYAN << SERVER_PREFIX << "New connection request!" << RESET << std::endl;
-
-    struct sockaddr_in cli_addr; // 클라이언트 주소 정보 구조체
-    socklen_t clilen = sizeof(cli_addr); // 주소 정보의 크기
-    int newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen); // 연결 수락
-    if (newsockfd == ERROR) { // 연결 수락 실패 시
-        std::cerr << CYAN << SERVER_PREFIX <<  "Error on accept" << RESET << std::endl;
-        return; // 다음 반복으로 넘어감
-    }
-
-    FD_SET(newsockfd, &current_sockets); // 새 소켓을 파일 디스크립터 세트에 추가
-    *max_fd = std::max(*max_fd, newsockfd); // 최대 파일 디스크립터 번호 업데이트
-
-    client_manager.add_client(newsockfd, cli_addr); // 클라이언트 매니저에 클라이언트 추가
-    
-    write(newsockfd, "Welcome! Please enter your nickname ;)\n", 39); // 닉네임 설정 요청
+Server &Server::operator=(const Server &src)
+{
+	_port = src._port;
+	_password = src._password;
+	_server_fd = src._server_fd;
+	return *this;
 }
 
-void Server::remove_client(int sockfd) {
-    std::string nickname = client_manager.get_nickname(sockfd);
-
-    close(sockfd); // 소켓 닫기
-    FD_CLR(sockfd, &current_sockets); // 세트에서 소켓 제거
-
-    client_manager.remove_client(sockfd); // 클라이언트 매니저에서 클라이언트 제거
-
-    std::cout << CYAN << SERVER_PREFIX << nickname << " quit the server" << RESET << std::endl;
+Server::~Server()
+{
+	close(_server_fd);
 }
 
-void Server::set_client_nickname(int sockfd, std::string nickname) {
-    client_manager.set_nickname(sockfd, nickname); // 클라이언트 매니저에서 닉네임 설정
-
-    std::cout << CYAN << SERVER_PREFIX << nickname << " entered the server" << RESET << std::endl;
-}
+// Path: src/Server.cpp
