@@ -33,13 +33,10 @@ ssize_t SocketStream::recv()
     if (errno == EWOULDBLOCK)
       return 0;
     else
-      throw std::runtime_error("recv() failed: " + std::string(strerror(errno)));
+      return recv_len;
   }
   else if (recv_len == 0)
-  {
-    std::cout << "[SocketStream] " << _fd << " disconnected" << std::endl;
-    return 0;
-  }
+    return -1;
   _read_buffer += std::string(_raw_read_buffer, recv_len);
   return recv_len;
 }
@@ -52,8 +49,10 @@ ssize_t SocketStream::send()
     if (errno == EWOULDBLOCK)
       return 0;
     else
-      throw std::runtime_error("send() failed: " + std::string(strerror(errno)));
+      return send_len;
   }
+  else if (send_len == 0)
+    return 0;
   _write_buffer = _write_buffer.substr(send_len);
   return send_len;
 }

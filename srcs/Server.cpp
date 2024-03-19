@@ -44,7 +44,7 @@ void Server::run()
 			throw std::runtime_error("select() failed: " + std::string(strerror(errno)));
 		else if (event > 0)
 		{
-			std::cout << "[Server] Event count: " << event << std::endl;
+			// std::cout << "[Server] Event count: " << event << std::endl;
 			for (int i = 0; i < FD_SETSIZE; i++)
 			{
 				if (FD_ISSET(i, &_read_fds)) // read event
@@ -74,12 +74,17 @@ void Server::accept_new_client()
 void Server::read_client(Client *client)
 {
 	// 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
-	if (client->recv() < 0) // 연결이 끊어졌을 때
+	const ssize_t recv_len = client->recv();
+
+	if (recv_len < 0) // 연결 종료
 	{
 		FD_CLR(client->get_fd(), &_master_fds);
 		_clients.erase(client->get_fd());
 		delete client;
+		return;
 	}
+	else if (recv_len == 0) // 연결 대기 중
+		return;
 
 	// 클라이언트의 버퍼로부터 데이터를 읽어들임 - 개행 단위로 처리를 위해 벡터로 변경될 예정
 	std::string msg = client->read_buffer();
@@ -92,7 +97,17 @@ void Server::read_client(Client *client)
 void Server::write_client(Client *client)
 {
 	// 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
-	client->send();
+	const ssize_t send_len = client->send();
+
+	if (send_len < 0) // 비정상적인 연결 종료
+	{
+		FD_CLR(client->get_fd(), &_master_fds);
+		_clients.erase(client->get_fd());
+		delete client;
+		return;
+	}
+	else if (send_len == 0) // 버퍼에 남은 데이터가 없거나, 연결 대기 중
+		return;
 }
 
 Server::Server() : _port(0), _password(0), _server_fd(0)
