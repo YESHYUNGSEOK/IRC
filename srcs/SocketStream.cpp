@@ -5,8 +5,13 @@ SocketStream::SocketStream(const int server_fd)
       _addr_len(sizeof(_addr)),
       _fd(accept(server_fd,
                  const_cast<struct sockaddr *>(reinterpret_cast<const struct sockaddr *>(&_addr)),
-                 const_cast<socklen_t *>(&_addr_len)))
+                 const_cast<socklen_t *>(&_addr_len))),
+      _read_buffer(),
+      _write_buffer(),
+      _raw_read_buffer(new char[BUFFER_SIZE]),
+      _raw_write_buffer(new char[BUFFER_SIZE])
 {
+
   std::cout << "[SocketStream] " << _fd << " connected" << std::endl;
   // 클라이언트의 연결을 수락
   if (_fd < 0) // 소켓 연결에 실패했을 때
@@ -20,27 +25,51 @@ int SocketStream::get_fd() const
   return _fd;
 }
 
+ssize_t SocketStream::recv()
+{
+  ssize_t recv_len = ::recv(_fd, _raw_read_buffer, BUFFER_SIZE, 0);
+  if (recv_len < 0)
+  {
+    if (errno == EWOULDBLOCK)
+      return 0;
+    else
+      throw std::runtime_error("recv() failed: " + std::string(strerror(errno)));
+  }
+  else if (recv_len == 0)
+  {
+    std::cout << "[SocketStream] " << _fd << " disconnected" << std::endl;
+    return 0;
+  }
+  _read_buffer += std::string(_raw_read_buffer, recv_len);
+  return recv_len;
+}
+
+ssize_t SocketStream::send()
+{
+  ssize_t send_len = ::send(_fd, _write_buffer.c_str(), _write_buffer.length(), 0);
+  if (send_len < 0)
+  {
+    if (errno == EWOULDBLOCK)
+      return 0;
+    else
+      throw std::runtime_error("send() failed: " + std::string(strerror(errno)));
+  }
+  _write_buffer = _write_buffer.substr(send_len);
+  return send_len;
+}
+
 SocketStream &SocketStream::operator<<(const std::string &data)
 {
-  // 데이터를 소켓에 쓰기 - partial write 처리 필요
-  send(_fd, data.c_str(), data.length(), 0);
+  _write_buffer += data;
+
   return *this;
 }
+
 SocketStream &SocketStream::operator>>(std::string &data)
 {
-  char buffer[1024];
-  const int size = recv(_fd, buffer, sizeof(buffer) - 1, 0);
-  std::cout << "size: " << size << std::endl;
-  if (size < 0 && errno != ECONNRESET)
-    throw std::runtime_error("recv() failed: " + std::string(strerror(errno)));
-  else if (size == 0)
-    // 연결이 끊어졌을 때의 처리
-    data = "";
-  else
-  {
-    buffer[size] = '\0';
-    data = buffer;
-  }
+  data = _read_buffer;
+  _read_buffer.clear();
+
   return *this;
 }
 
@@ -50,8 +79,13 @@ SocketStream::SocketStream()
       _addr_len(0),
       _fd(0),
       _read_buffer(""),
-      _write_buffer("")
+      _write_buffer(""),
+      _raw_read_buffer(new char[BUFFER_SIZE]),
+      _raw_write_buffer(new char[BUFFER_SIZE])
 {
+  _raw_read_buffer[0] = '\0';
+  _raw_write_buffer[0] = '\0';
+
   std::cout << "[SocketStream] default constructer called - need to fix" << std::endl;
 }
 // 사용하지 않는 생성자
@@ -81,6 +115,8 @@ SocketStream &SocketStream::operator=(const SocketStream &src)
 
 SocketStream::~SocketStream()
 {
-  std::cout << "[SocketStream] " << _fd << " disconnected" << std::endl;
+  delete[] _raw_read_buffer;
+  delete[] _raw_write_buffer;
   close(_fd);
+  std::cout << "[SocketStream] " << _fd << " disconnected" << std::endl;
 }

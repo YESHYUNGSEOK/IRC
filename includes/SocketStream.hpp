@@ -8,11 +8,15 @@
 class SocketStream
 {
 private:
+  static const int BUFFER_SIZE = 1024;
+
   const struct sockaddr_in _addr;
   const socklen_t _addr_len;
   const int _fd;
   std::string _read_buffer;
   std::string _write_buffer;
+  char *_raw_read_buffer;
+  char *_raw_write_buffer;
 
 public:
   SocketStream();
@@ -22,26 +26,13 @@ public:
   ~SocketStream();
 
   int get_fd() const;
+  ssize_t recv();
+  ssize_t send();
 
   SocketStream &operator<<(const std::string &data);
   SocketStream &operator>>(std::string &data);
 
-  // 템플릿 함수는 가급적 사용x
-  template <typename T>
-  SocketStream &operator<<(const T &data)
-  {
-    // 데이터를 소켓에 쓰기 - partial write 처리 필요
-    send(_fd, &data, sizeof(data), 0);
-    return *this;
-  }
-  // 템플릿 함수는 가급적 사용x
-  template <typename T>
-  SocketStream &operator>>(T &data)
-  {
-    // 데이터를 소켓에서 읽기 - partial read 처리 필요
-    recv(_fd, &data, sizeof(data), 0);
-    return *this;
-  }
+  void flush_write_buffer();
 };
 
 #endif // IOHANDLER_HPP
