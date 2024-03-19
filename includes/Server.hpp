@@ -17,7 +17,9 @@ private:
 	int _port;
 	int _password;
 	int _server_fd;
-	fd_set _master;
+	fd_set _master_fds;
+	fd_set _read_fds;
+	fd_set _write_fds;
 	struct sockaddr_in _addr;
 
 	std::map<int, Client *> _clients;
@@ -33,7 +35,8 @@ public:
 
 	void run();
 	void accept_new_client();
-	void handle_client(Client *client);
+	void read_client(Client *client);
+	void write_client(Client *client);
 };
 
 #endif
