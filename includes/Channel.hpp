@@ -22,52 +22,52 @@ enum MODE {
 };
 
 class Channel {
-private:
-    std::string _name;
-    std::string _topic;
-    std::string _key;
-    
-	int _mode;
-    int _max_clients;
-    
-	std::map<int, Client*> _clients;
-    std::vector<Client*> _operators;
-    std::vector<Client*> _invited;
-    std::vector<Client*> _banned;
+	private:
+		std::string _name;
+		std::string _topic;
+		std::string _key;
+		
+		int _mode;
+		int _max_clients;
+		
+		std::map<int, Client*> _clients;
+		std::vector<Client*> _operators;
+		std::vector<Client*> _invited;
+		std::vector<Client*> _banned;
 
-public:
-    Channel(const std::string& name, Client *client);
-    ~Channel();
+	public:
+		Channel(const std::string& name, Client *client);
+		~Channel();
 
-	// 채널 이름
-    std::string getName() const;
+		// 채널 이름
+		std::string get_name() const;
 
-	// 클라이언트
-    void addClient(Client* client);
-    void removeClient(Client* client);
-    bool isClientInChannel(Client* client) const;
+		// 클라이언트
+		void add_client(Client* client);
+		void remove_client(Client* client);
+		bool is_client_in_channel(Client* client) const;
 
-	// 토픽
-    void setTopic(const std::string& topic);
-    std::string getTopic() const;
+		// 토픽
+		void set_topic(const std::string& topic);
+		std::string get_topic() const;
 
-	// 모드
-	void setMode(MODE mode);
-    void unsetMode(MODE mode);
-    bool hasMode(MODE mode) const;
+		// 모드
+		void set_mode(MODE mode);
+		void unset_mode(MODE mode);
+		bool has_mode(MODE mode) const;
 
-	// 운영자
-    void addOperator(Client* client);
-    void removeOperator(Client* client);
-    bool isOperator(Client* client) const;
+		// 운영자
+		void add_operator(Client* client);
+		void remove_operator(Client* client);
+		bool is_operator(Client* client) const;
 
-	// 초대
-    void inviteClient(Client* client);
-    bool isInvited(Client* client) const;
+		// 초대
+		void invite_client(Client* client);
+		bool is_invited(Client* client) const;
 
-	// 밴
-    void banClient(Client* client);
-    bool isBanned(Client* client) const;
+		// 밴
+		void ban_client(Client* client);
+		bool is_banned(Client* client) const;
 };
 
 #endif
