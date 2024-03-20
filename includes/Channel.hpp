@@ -8,27 +8,29 @@
 #include "Client.hpp"
 
 enum MODE {
-    OPERATOR = 'o',      // 운영자
-    VOICE = 'v',         // 발언권
-    INVITE_ONLY = 'i',   // 초대 전용
-    MODERATED = 'm',     // 중재됨
-    NO_EXTERNAL_MESSAGES = 'n', // 외부 메시지 금지
-    TOPIC_SETTABLE_BY_OP_ONLY = 't', // 토픽 보호
-    SECRET = 's',        // 비밀 채널
-    PRIVATE = 'p',       // 개인 채널
-    USER_LIMIT = 'l',    // 사용자 수 제한
-    BAN_MASK = 'b',      // 밴 마스크
-    KEY = 'k'            // 채널 키 (비밀번호)
+    OPERATOR = 1 << 0,      // 운영자
+    VOICE = 1 << 1,         // 발언권
+    INVITE_ONLY = 1 << 2,   // 초대 전용
+    MODERATED = 1 << 3,     // 중재됨
+    NO_EXTERNAL_MESSAGES = 1 << 4, // 외부 메시지 금지
+    TOPIC_SETTABLE_BY_OP_ONLY = 1 << 5, // 토픽 보호
+    SECRET = 1 << 6,        // 비밀 채널
+    PRIVATE = 1 << 7,       // 개인 채널
+    USER_LIMIT = 1 << 8,    // 사용자 수 제한
+    BAN_MASK = 1 << 9,      // 밴 마스크
+    KEY = 1 << 10           // 채널 키 (비밀번호)
 };
 
 class Channel {
 private:
-    int _max_clients;
     std::string _name;
     std::string _topic;
     std::string _key;
-    std::vector<char> _mode;
-    std::map<int, Client*> _clients;
+    
+	int _mode;
+    int _max_clients;
+    
+	std::map<int, Client*> _clients;
     std::vector<Client*> _operators;
     std::vector<Client*> _invited;
     std::vector<Client*> _banned;
@@ -42,9 +44,9 @@ public:
     bool isClientInChannel(Client* client) const;
     void setTopic(const std::string& topic);
     std::string getTopic() const;
-    void setMode(char mode);
-    void unsetMode(char mode);
-    bool hasMode(char mode) const;
+	void setMode(MODE mode);
+    void unsetMode(MODE mode);
+    bool hasMode(MODE mode) const;
     void addOperator(Client* client);
     void removeOperator(Client* client);
     bool isOperator(Client* client) const;

@@ -30,21 +30,16 @@ std::string Channel::getTopic() const {
     return _topic;
 }
 
-void Channel::setMode(char mode) {
-    if (std::find(_mode.begin(), _mode.end(), mode) == _mode.end()) {
-        _mode.push_back(mode);
-    }
+void Channel::setMode(MODE mode) {
+    _mode |= mode;
 }
 
-void Channel::unsetMode(char mode) {
-    std::vector<char>::iterator it = std::find(_mode.begin(), _mode.end(), mode);
-    if (it != _mode.end()) {
-        _mode.erase(it);
-    }
+void Channel::unsetMode(MODE mode) {
+    _mode &= ~mode;
 }
 
-bool Channel::hasMode(char mode) const {
-    return std::find(_mode.begin(), _mode.end(), mode) != _mode.end();
+bool Channel::hasMode(MODE mode) const {
+    return (_mode & mode) != 0;
 }
 
 void Channel::addOperator(Client* client) {
