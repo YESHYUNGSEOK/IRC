@@ -42,6 +42,14 @@ class Channel {
 		// 채널 이름
 		std::string get_name() const;
 
+		// 채널 키
+		void set_key(const std::string& key);
+    	std::string get_key() const;
+
+		// 최대 클라이언트 수
+    	int get_max_clients() const;
+    	void set_max_clients(int max_clients);
+
 		// 클라이언트
 		void add_client(Client* client);
 		void remove_client(Client* client);

@@ -11,6 +11,22 @@ std::string Channel::get_name() const {
     return _name;
 }
 
+void Channel::set_key(const std::string& key) {
+    _key = key;
+}
+
+std::string Channel::get_key() const {
+    return _key;
+}
+
+int Channel::get_max_clients() const {
+    return _max_clients;
+}
+
+void Channel::set_max_clients(int max_clients) {
+    _max_clients = max_clients;
+}
+
 void Channel::add_client(Client* client) {
     if (!is_client_in_channel(client)) {
         _clients[client->get_fd()] = client;
