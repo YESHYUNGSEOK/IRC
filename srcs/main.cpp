@@ -14,20 +14,16 @@
 #include <cstring>
 #include <iostream>
 
-#include "ft_irc.hpp"
 #include "Server.hpp"
+#include "ft_irc.hpp"
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   (void)argc;
 
-  try
-  {
+  try {
     Server server(atoi(argv[1]), atoi(argv[2]));
     server.run();
-  }
-  catch (std::exception &e)
-  {
+  } catch (std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
   }
 

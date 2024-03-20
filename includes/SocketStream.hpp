@@ -3,11 +3,11 @@
 #define SOCKETSTREAM_HPP
 
 #include <string>
+
 #include "ft_irc.hpp"
 
-class SocketStream
-{
-private:
+class SocketStream {
+ private:
   static const int BUFFER_SIZE = 1024;
 
   const struct sockaddr_in _addr;
@@ -18,7 +18,7 @@ private:
   char *_raw_read_buffer;
   char *_raw_write_buffer;
 
-public:
+ public:
   SocketStream();
   SocketStream(const int server_fd);
   SocketStream(const SocketStream &src);
@@ -35,4 +35,4 @@ public:
   void flush_write_buffer();
 };
 
-#endif // IOHANDLER_HPP
+#endif  // IOHANDLER_HPP

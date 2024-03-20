@@ -2,10 +2,10 @@ NAME = ircserv
 CXX = c++
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -pedantic -g -fsanitize=address
 SRC_DIR = srcs
-SRC = main.cpp SocketStream.cpp Client.cpp Server.cpp ClientManager.cpp CommandHandler.cpp
+SRC = main.cpp SocketStream.cpp Client.cpp Server.cpp ClientManager.cpp CommandHandler.cpp Channel.cpp
 OBJ = ${SRC:.cpp=.o}
 OBJ_DIR = objs
-INCLUDE = ft_irc.hpp SocketStream.hpp Client.hpp Server.hpp
+INCLUDE = ft_irc.hpp SocketStream.hpp Client.hpp Server.hpp Channel.hpp
 INCLUDE_DIR = includes
 
 all:	${NAME}

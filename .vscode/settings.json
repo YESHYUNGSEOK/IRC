@@ -1,5 +1,6 @@
 {
   "editor.defaultFormatter": "ms-vscode.cpptools",
+  "editor.formatOnSave": true,
   "files.associations": {
     "__bit_reference": "cpp",
     "__bits": "cpp",

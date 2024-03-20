@@ -2,22 +2,21 @@
 #ifndef FT_IRC_HPP
 #define FT_IRC_HPP
 
-#include <iostream>
-#include <stdexcept>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-#include <cstring>
 #include <cerrno>
 #include <cstdio>
-
-#include <unistd.h>
-#include <poll.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
+#include <cstring>
+#include <iostream>
+#include <stdexcept>
 
 #endif
