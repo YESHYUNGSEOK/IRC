@@ -1,4 +1,5 @@
 {
+  "editor.defaultFormatter": "ms-vscode.cpptools",
   "files.associations": {
     "__bit_reference": "cpp",
     "__bits": "cpp",
@@ -63,6 +64,13 @@
     "concepts": "cpp",
     "algorithm": "cpp",
     "__tree": "cpp",
-    "map": "cpp"
+    "map": "cpp",
+    "__functional_base": "cpp",
+    "deque": "cpp",
+    "functional": "cpp",
+    "iterator": "cpp",
+    "list": "cpp",
+    "set": "cpp",
+    "utility": "cpp"
   }
 }
