@@ -7,6 +7,10 @@ Channel::Channel(const std::string& name, Client *client) : _name(name), _topic(
 
 Channel::~Channel() {}
 
+std::string Channel::getName() const {
+    return _name;
+}
+
 void Channel::addClient(Client* client) {
     // 중복 추가 방지
     if (!isClientInChannel(client)) {
@@ -84,8 +88,4 @@ void Channel::banClient(Client* client) {
 
 bool Channel::isBanned(Client* client) const {
     return std::find(_banned.begin(), _banned.end(), client) != _banned.end();
-}
-
-std::string Channel::getName() const {
-    return _name;
 }

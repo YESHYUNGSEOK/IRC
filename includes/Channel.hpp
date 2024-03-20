@@ -39,22 +39,35 @@ public:
     Channel(const std::string& name, Client *client);
     ~Channel();
 
+	// 채널 이름
+    std::string getName() const;
+
+	// 클라이언트
     void addClient(Client* client);
     void removeClient(Client* client);
     bool isClientInChannel(Client* client) const;
+
+	// 토픽
     void setTopic(const std::string& topic);
     std::string getTopic() const;
+
+	// 모드
 	void setMode(MODE mode);
     void unsetMode(MODE mode);
     bool hasMode(MODE mode) const;
+
+	// 운영자
     void addOperator(Client* client);
     void removeOperator(Client* client);
     bool isOperator(Client* client) const;
+
+	// 초대
     void inviteClient(Client* client);
     bool isInvited(Client* client) const;
+
+	// 밴
     void banClient(Client* client);
     bool isBanned(Client* client) const;
-    std::string getName() const;
 };
 
 #endif
