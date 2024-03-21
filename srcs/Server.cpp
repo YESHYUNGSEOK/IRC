@@ -18,45 +18,59 @@ Server::Server(int port, int password) : _port(port), _password(password) {
   // fd_set 초기화
   FD_ZERO(&_master_fds);
   FD_ZERO(&_read_fds);
-  FD_ZERO(&_write_fds);
+  // FD_ZERO(&_write_fds);
 
   // 서버 소켓을 _master에 추가
   FD_SET(_server_fd, &_master_fds);
+
+#ifdef __APPLE__                                   // macOS
+  if (fcntl(_server_fd, F_SETFL, O_NONBLOCK) < 0)  // 소켓을 논블로킹으로 설정
+    throw std::runtime_error("[Server::run()]: fcntl() failed: " +
+                             std::string(strerror(errno)));
+#endif
+
+  // SOMAXCONN은 시스템에서 지정한 최대 연결 요청 대기 큐의 크기
+  if (listen(_server_fd, SOMAXCONN) < 0)
+    throw std::runtime_error("[Server::run()]: listen() failed: " +
+                             std::string(strerror(errno)));
 }
 
 void Server::run() {
-  if (fcntl(_server_fd, F_SETFL, O_NONBLOCK) < 0)  // 소켓을 논블로킹으로 설정
-    throw std::runtime_error("fcntl() failed: " + std::string(strerror(errno)));
-
-  if (listen(_server_fd, SOMAXCONN) <
-      0)  // SOMAXCONN은 시스템에서 지정한 최대 연결 수
-    throw std::runtime_error("listen() failed: " +
-                             std::string(strerror(errno)));
-
   while (true) {
-    // select()를 호출할 때마다 초기화
-    _read_fds = _master_fds;
-    _write_fds = _master_fds;
+    _read_fds = _master_fds;  // select()를 호출할 때마다 초기화
+    // _write_fds = _master_fds;
+
+    const int max_sock_fd =
+        _clients.empty() ? _server_fd : (*_clients.rbegin())->get_fd();
 
     // select()는 이벤트가 발생한 파일 디스크립터의 개수를 반환
-    int event = select(FD_SETSIZE, &_read_fds, &_write_fds, NULL, NULL);
+    // int event = select(FD_SETSIZE, &_read_fds, &_write_fds, NULL, NULL);
+    const int event = select(max_sock_fd + 1, &_read_fds, NULL, NULL, NULL);
+    std::cout << "event: " << event << std::endl;
+
     if (event < 0)
       throw std::runtime_error("select() failed: " +
                                std::string(strerror(errno)));
     else if (event > 0) {
-      // std::cout << "[Server] Event count: " << event << std::endl;
-      for (int i = 0; i < FD_SETSIZE; i++) {
-        if (FD_ISSET(i, &_read_fds))  // read event
-        {
-          if (i == _server_fd)  // 새로운 클라이언트 연결
-            accept_new_client();
-          else  // 기존 클라이언트로부터 메시지를 받음
-            read_client(_clients[i]);
-        } else if (FD_ISSET(i, &_write_fds))  // write event
-        {
-          if (i != _server_fd)  // 버퍼 내용을 소켓에 쓰기
-            write_client(_clients[i]);
-        }
+      std::set<Client *>::iterator it = _clients.begin();
+      while (it != _clients.end()) {
+        std::cout << "fd: " << (*it)->get_fd() << std::endl;
+        if (FD_ISSET((*it)->get_fd(), &_read_fds)) {  // read event
+          try {
+            read_client(*it);
+            write_client(*it);
+            it++;
+          } catch (std::exception &e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+            FD_CLR((*it)->get_fd(), &_master_fds);
+            delete *it;
+            it = _clients.erase(it);
+          }
+        } else
+          it++;
+      }
+      if (FD_ISSET(_server_fd, &_read_fds)) {  // accept event
+        accept_new_client();
       }
     }
   }
@@ -64,45 +78,24 @@ void Server::run() {
 
 void Server::accept_new_client() {
   Client *client = new Client(_server_fd);  // 새로운 클라이언트 생성
-  FD_SET(client->get_fd(), &_master_fds);  // 새로운 클라이언트를 _master에 추가
-  _clients.insert(std::make_pair(
-      client->get_fd(), client));  // 새로운 클라이언트를 _clients에 추가
+  FD_SET(client->get_fd(),
+         &_master_fds);     // 새로운 클라이언트를 _master에 추가
+  _clients.insert(client);  // 새로운 클라이언트를 _clients에 추가
 }
 
 void Server::read_client(Client *client) {
   // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
-  const ssize_t recv_len = client->recv();
+  client->recv();
 
-  if (recv_len < 0)  // 연결 종료
-  {
-    FD_CLR(client->get_fd(), &_master_fds);
-    _clients.erase(client->get_fd());
-    delete client;
-    return;
-  } else if (recv_len == 0)  // 연결 대기 중
-    return;
-
-  // 클라이언트의 버퍼로부터 데이터를 읽어들임 - 개행 단위로 처리를 위해 벡터로
-  // 변경될 예정
+  // 클라이언트의 버퍼로부터 데이터를 읽어들임
+  // 개행 단위로 처리를 위해 컨테이너로 반환
   std::string msg = client->read_buffer();
-
-  for (std::map<int, Client *>::iterator it = _clients.begin();
-       it != _clients.end(); it++)
-    if (it->second != client) it->second->broadcast(client->get_fd(), msg);
+  std::cout << "from: " << client->get_fd() << " msg: " << msg << std::endl;
 }
 
 void Server::write_client(Client *client) {
   // 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
-  const ssize_t send_len = client->send();
-
-  if (send_len < 0)  // 비정상적인 연결 종료
-  {
-    FD_CLR(client->get_fd(), &_master_fds);
-    _clients.erase(client->get_fd());
-    delete client;
-    return;
-  } else if (send_len == 0)  // 버퍼에 남은 데이터가 없거나, 연결 대기 중
-    return;
+  client->send();
 }
 
 Server::Server() : _port(0), _password(0), _server_fd(0) {}
@@ -119,4 +112,4 @@ Server &Server::operator=(const Server &src) {
 
 Server::~Server() { close(_server_fd); }
 
-// Path: src/Server.cpp
+// Path: srcs/Server.cpp

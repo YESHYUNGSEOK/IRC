@@ -26,8 +26,8 @@ class SocketStream {
   ~SocketStream();
 
   int get_fd() const;
-  ssize_t recv();
-  ssize_t send();
+  void recv();
+  void send();
 
   SocketStream &operator<<(const std::string &data);
   SocketStream &operator>>(std::string &data);
