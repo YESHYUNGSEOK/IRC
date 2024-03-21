@@ -19,14 +19,33 @@ std::string Client::read_buffer() {
 
 void Client::write_buffer(const std::string &msg) { _stream << msg; }
 
-ssize_t Client::recv() { return _stream.recv(); }
+void Client::recv() { _stream.recv(); }
 
-ssize_t Client::send() { return _stream.send(); }
+void Client::send() { _stream.send(); }
 
 void Client::broadcast(const int origin_fd, const std::string &msg) {
   // 클라이언트에게 메시지를 전송
   _stream << "Broadcast from Client " << std::to_string(origin_fd) << ": "
           << msg;
+}
+
+bool Client::operator==(const Client &other) {
+  return _stream.get_fd() == other._stream.get_fd();
+}
+bool Client::operator!=(const Client &other) {
+  return _stream.get_fd() != other._stream.get_fd();
+}
+bool Client::operator<(const Client &other) {
+  return _stream.get_fd() < other._stream.get_fd();
+}
+bool Client::operator>(const Client &other) {
+  return _stream.get_fd() > other._stream.get_fd();
+}
+bool Client::operator<=(const Client &other) {
+  return _stream.get_fd() <= other._stream.get_fd();
+}
+bool Client::operator>=(const Client &other) {
+  return _stream.get_fd() >= other._stream.get_fd();
 }
 
 // 사용하지 않는 생성자

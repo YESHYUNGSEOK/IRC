@@ -16,6 +16,13 @@ class Client {
   Client(const Client &src);
   Client &operator=(const Client &src);
 
+  bool operator==(const Client &other);
+  bool operator!=(const Client &other);
+  bool operator<(const Client &other);
+  bool operator>(const Client &other);
+  bool operator<=(const Client &other);
+  bool operator>=(const Client &other);
+
  public:
   Client(int server_fd);
   ~Client();
@@ -24,8 +31,8 @@ class Client {
   std::string read_buffer();  // 연산자 오버로딩으로 변경해도 될 듯
   void write_buffer(
       const std::string &msg);  // 연산자 오버로딩으로 변경해도 될 듯
-  ssize_t recv();
-  ssize_t send();
+  void recv();
+  void send();
   void broadcast(const int origin_fd, const std::string &msg);
 };
 
