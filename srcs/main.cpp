@@ -1,17 +1,31 @@
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+
 #include "Server.hpp"
+#include "ft_irc.hpp"
 
 int main(int argc, char **argv) {
-    if (argc == 3) { // 인자의 개수가 정확히 3개인지 확인 (프로그램 이름, 포트, 패스워드)
-        int port = std::stoi(argv[1]);
-        std::string password = argv[2];
+  (void)argc;
 
-		Server server(port, password); // 서버 객체 생성 및 초기화
+  try {
+    Server server(atoi(argv[1]), atoi(argv[2]));
+    server.run();
+  } catch (std::exception &e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+  }
 
-		server.run(); // 서버 실행
-
-        return EXIT_SUCCESS;
-    } else {
-        std::cout << YELLOW << "[ERROR] Correct usage is ./ircserv [port] [password]" << RESET << std::endl;
-        return EXIT_FAILURE;
-    }
+  return 0;
 }

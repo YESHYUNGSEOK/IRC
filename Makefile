@@ -1,37 +1,34 @@
-NAME		= ircserv
-
-SRCS		= main.cpp Server.cpp ClientManager.cpp
-
-DIR_SRCS	= srcs/
-
-DIR_OBJS	= objs/
-
-OBJS		= ${SRCS:%.cpp=${DIR_OBJS}%.o}
-
-CXX			= c++
-
-DEP			= ${OBJS:%.o=%.d}
-
-CPPFLAGS	= -Wall -Wextra -Werror -std=c++98 -c -I includes/ 
-
-RM 			= rm -f
+NAME = ircserv
+CXX = c++
+CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -pedantic -g -fsanitize=address
+SRC_DIR = srcs
+SRC = main.cpp SocketStream.cpp Client.cpp Server.cpp ClientManager.cpp CommandHandler.cpp Channel.cpp
+OBJ = ${SRC:.cpp=.o}
+OBJ_DIR = objs
+INCLUDE = ft_irc.hpp SocketStream.hpp Client.hpp Server.hpp Channel.hpp
+INCLUDE_DIR = includes
 
 all:	${NAME}
 
-${NAME} : ${OBJS}
-	${CXX} $^ -o $@
+${NAME}:	$(addprefix ${OBJ_DIR}/, ${OBJ})
+	${CXX} ${CXXFLAGS}  $^ -o $@ 
 
-${OBJS} : ${DIR_OBJS}%.o: ${DIR_SRCS}%.cpp
-	mkdir -p ${@D}
-	${CXX} ${CPPFLAGS} $< -o $@
--include ${DEP}
+${OBJ_DIR}/${OBJ}: $(addprefix ${SRC_DIR}/, ${SRC})
+	if [ ! -d ${OBJ_DIR} ]; then \
+  		mkdir "${OBJ_DIR}"; \
+	fi
+	${CXX} -c ${CXXFLAGS} $^ -I${INCLUDE_DIR}
+	mv ${OBJ} ${OBJ_DIR}
 
 clean:
-	${RM} -r ${DIR_OBJS}
+	rm -rf ${OBJ_DIR}
 
-fclean: clean
+fclean:
+	${MAKE} clean
 	${RM} ${NAME}
 
-re: fclean all
+re:
+	${MAKE} fclean
+	${MAKE} all
 
-.PHONY: all clean fclean re
+.PHONY:	all clean fclean re
