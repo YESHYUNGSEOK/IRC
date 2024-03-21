@@ -3,6 +3,7 @@
 SocketStream::SocketStream(const int server_fd)
     : _addr(),
       _addr_len(sizeof(_addr)),
+      // 클라이언트의 연결을 수락
       _fd(accept(server_fd,
                  const_cast<struct sockaddr *>(
                      reinterpret_cast<const struct sockaddr *>(&_addr)),
@@ -12,41 +13,58 @@ SocketStream::SocketStream(const int server_fd)
       _raw_read_buffer(new char[BUFFER_SIZE]),
       _raw_write_buffer(new char[BUFFER_SIZE]) {
   std::cout << "[SocketStream] " << _fd << " connected" << std::endl;
-  // 클라이언트의 연결을 수락
+
   if (_fd < 0)  // 소켓 연결에 실패했을 때
     throw std::runtime_error("accept() failed: " +
                              std::string(strerror(errno)));
+
+#ifdef __APPLE__                            // macOS
   if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)  // 소켓을 논블로킹으로 설정
     throw std::runtime_error("fcntl() failed: " + std::string(strerror(errno)));
+#endif
 }
 
 int SocketStream::get_fd() const { return _fd; }
 
-ssize_t SocketStream::recv() {
-  ssize_t recv_len = ::recv(_fd, _raw_read_buffer, BUFFER_SIZE, 0);
-  if (recv_len < 0) {
-    if (errno == EWOULDBLOCK)
-      return 0;
-    else
-      return recv_len;
-  } else if (recv_len == 0)
-    return -1;
+void SocketStream::recv() {
+#ifdef __linux__  // Linux
+  const ssize_t recv_len =
+      ::recv(_fd, _raw_read_buffer, BUFFER_SIZE, MSG_DONTWAIT);
+#else  // macOS
+  const ssize_t recv_len = ::recv(_fd, _raw_read_buffer, BUFFER_SIZE, 0);
+#endif
+
+  if (recv_len <= 0) {
+    if ((errno == EAGAIN || errno == EWOULDBLOCK)) {
+      std::cout << "recv() would block" << std::endl;  // 임시
+      return;
+    } else
+      throw std::runtime_error("recv() failed: " +
+                               std::string(strerror(errno)));
+  }
+
   _read_buffer += std::string(_raw_read_buffer, recv_len);
-  return recv_len;
 }
 
-ssize_t SocketStream::send() {
-  ssize_t send_len =
+void SocketStream::send() {
+  if (_write_buffer.empty()) return;
+#ifdef __linux__  // Linux
+  const ssize_t send_len =
+      ::send(_fd, _write_buffer.c_str(), _write_buffer.length(), MSG_DONTWAIT);
+#else  // macOS
+  const ssize_t send_len =
       ::send(_fd, _write_buffer.c_str(), _write_buffer.length(), 0);
-  if (send_len < 0) {
-    if (errno == EWOULDBLOCK)
-      return 0;
+#endif
+
+  if (send_len <= 0) {  // 0일 경우 처리 결정 필요
+    if ((errno == EAGAIN || errno == EWOULDBLOCK))
+      return;
     else
-      return send_len;
-  } else if (send_len == 0)
-    return 0;
+      throw std::runtime_error("send() failed: " +
+                               std::string(strerror(errno)));
+  }
+
   _write_buffer = _write_buffer.substr(send_len);
-  return send_len;
 }
 
 SocketStream &SocketStream::operator<<(const std::string &data) {
