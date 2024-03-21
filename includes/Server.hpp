@@ -18,10 +18,11 @@ class Server {
   int _server_fd;
   fd_set _master_fds;
   fd_set _read_fds;
-  fd_set _write_fds;
+  // fd_set _write_fds; - 임시 주석처리
   struct sockaddr_in _addr;
 
-  std::map<int, Client *> _clients;
+  // std::map<int, Client *> _clients;
+  std::set<Client *> _clients;
   // std::vector<struct sockaddr_in> _client_addrs;
 
   Server();
