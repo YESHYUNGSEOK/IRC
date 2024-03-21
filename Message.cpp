@@ -89,7 +89,6 @@ bool Message::is_valid_command(const std::string &command)
 	};
 	if (command.empty())
 		return false;
-	std::cout << "command: |" << command << "|" << std::endl;
 	for (int i = 0; i < 20; i++)
 	{
 		if (command == cmdArr[i])

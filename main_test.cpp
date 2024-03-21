@@ -4,9 +4,9 @@
 
 int main(void) {
 
-	std::string case1 = "NICK user123\r\n";
-	std::string case2 = "USER user1 0 * :real name\r\n";
-	std::string case3 = ":WiZ PRIVMSG jto #Twilight_zone :I am the walrus\r\n";
+	std::string case1 = "PRIVMSG Angel :yes I'm receiving it !\r\n";
+	std::string case2 = "JOIN #foobar\r\n";
+	std::string case3 = "MODE #Finnish +t :dune 2 \r\n";
 
 	Message msg1(case1);
 	Message msg2(case2);
