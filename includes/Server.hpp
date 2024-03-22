@@ -9,6 +9,8 @@
 #include <vector>
 
 #include "Client.hpp"
+#include "Message.hpp"
+#include "NumericReply.hpp"
 #include "ft_irc.hpp"
 
 class Server {
@@ -34,9 +36,16 @@ class Server {
   ~Server();
 
   void run();
+
   void accept_new_client();
   void read_client(Client *client);
   void write_client(Client *client);
+
+  // PASS 명령어 처리
+  void register_client(Client *client, const int password);
+
+  // NICK 명령어 처리
+  void set_nickname(Client *client, const std::string &nickname);
 };
 
 #endif

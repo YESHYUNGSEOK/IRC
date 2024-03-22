@@ -11,6 +11,11 @@ Server::Server(int port, int password) : _port(port), _password(password) {
   _addr.sin_addr.s_addr = INADDR_ANY;  // Listen on all interfaces
   _addr.sin_port = htons(_port);       // network byte order
 
+  unsigned int opt = 1;  // 소켓 옵션 설정 - 재사용 허용
+  if (setsockopt(_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    throw std::runtime_error("setsockopt() failed: " +
+                             std::string(strerror(errno)));
+
   // 소켓 바인딩
   if (bind(_server_fd, (struct sockaddr *)&_addr, sizeof(_addr)) < 0)
     throw std::runtime_error("bind() failed: " + std::string(strerror(errno)));
@@ -46,7 +51,6 @@ void Server::run() {
     // select()는 이벤트가 발생한 파일 디스크립터의 개수를 반환
     // int event = select(FD_SETSIZE, &_read_fds, &_write_fds, NULL, NULL);
     const int event = select(max_sock_fd + 1, &_read_fds, NULL, NULL, NULL);
-    std::cout << "event: " << event << std::endl;
 
     if (event < 0)
       throw std::runtime_error("select() failed: " +
@@ -54,14 +58,26 @@ void Server::run() {
     else if (event > 0) {
       std::set<Client *>::iterator it = _clients.begin();
       while (it != _clients.end()) {
-        std::cout << "fd: " << (*it)->get_fd() << std::endl;
         if (FD_ISSET((*it)->get_fd(), &_read_fds)) {  // read event
           try {
             read_client(*it);
             write_client(*it);
             it++;
-          } catch (std::exception &e) {
+          } catch (SocketStream::SystemCallException &e) {
             std::cerr << "Error: " << e.what() << std::endl;
+            FD_CLR((*it)->get_fd(), &_master_fds);
+            delete *it;
+            it = _clients.erase(it);
+          } catch (SocketStream::ConnectionClosedException &e) {
+            FD_CLR((*it)->get_fd(), &_master_fds);
+            delete *it;
+            it = _clients.erase(it);
+          } catch (SocketStream::NoNewlineException &e) {
+            it++;
+          } catch (SocketStream::MessageTooLongException &e) {
+            **it << ERR_MSGTOOLONG_STR;
+            it++;
+          } catch (...) {
             FD_CLR((*it)->get_fd(), &_master_fds);
             delete *it;
             it = _clients.erase(it);
@@ -83,6 +99,8 @@ void Server::accept_new_client() {
   _clients.insert(client);  // 새로운 클라이언트를 _clients에 추가
 }
 
+#define ERR_UNKNOWNCOMMAND_STR ":localhost 421 * :Unknown command\r\n"
+
 void Server::read_client(Client *client) {
   // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
   client->recv();
@@ -90,12 +108,47 @@ void Server::read_client(Client *client) {
   // 클라이언트의 버퍼로부터 데이터를 읽어들임
   // 개행 단위로 처리를 위해 컨테이너로 반환
   std::string msg = client->read_buffer();
-  std::cout << "from: " << client->get_fd() << " msg: " << msg << std::endl;
+  // Message msg = client->get_msg();
+
+  // if (msg.compare(0, 3, "CAP") == 0) {
+  //   *client << "CAP * LS :\r\n";
+  // } else if (msg.compare(0, 6, "JOIN :") == 0) {
+  //   *client << "421 * JOIN : Unknown command\r\n";
+  //   // *client << ":localhost 451 * :You have not registered\r\n";
+  //   // *client << ":ft_irc 410 * JOIN :Invalid CAP command\r\n";
+  // } else if (msg.compare(0, 5, "NICK ") == 0) {
+  //   set_nickname(client, msg.substr(5));
+  // } else if (msg.compare(0, 5, "PASS ") == 0) {
+  //   register_client(client, std::stoi(msg.substr(5)));
+  // } else {
+  //   *client << ERR_UNKNOWNCOMMAND_STR;
+  // }
+  std::cout << "from " << client->get_fd() << ": [" << msg << "]" << std::endl;
 }
 
 void Server::write_client(Client *client) {
   // 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
   client->send();
+}
+
+void Server::register_client(Client *client, const int password) {
+  if (client->get_registraion()) {
+    *client << ERR_ALREADYREGISTRED_STR;
+  } else if (password == _password) {
+    client->set_register();
+    std::cout << "Client " << client->get_fd() << " registered" << std::endl;
+  } else {
+    *client << ERR_PASSWDMISMATCH_STR;
+  }
+}
+
+void Server::set_nickname(Client *client, const std::string &nickname) {
+  if (client->get_registraion()) {
+    client->set_nickname(nickname);
+    *client << RPL_WELCOME_STR;
+  } else {
+    *client << ERR_NOTREGISTERED_STR;
+  }
 }
 
 Server::Server() : _port(0), _password(0), _server_fd(0) {}
