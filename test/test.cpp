@@ -17,7 +17,6 @@ int main(void) {
 
   std::cout << "======================" << std::endl;
   std::cout << "Case 1: " << std::endl;
-  std::cout << msg1.get_prefix() << std::endl;
   std::cout << msg1.get_command() << std::endl;
   for (std::vector<std::string>::const_iterator it = msg1.get_params().begin();
        it != msg1.get_params().end(); it++) {
@@ -25,7 +24,6 @@ int main(void) {
   }
   std::cout << "======================" << std::endl;
   std::cout << "Case 2: " << std::endl;
-  std::cout << msg2.get_prefix() << std::endl;
   std::cout << msg2.get_command() << std::endl;
   for (std::vector<std::string>::const_iterator it = msg2.get_params().begin();
        it != msg2.get_params().end(); it++) {
@@ -33,7 +31,6 @@ int main(void) {
   }
   std::cout << "======================" << std::endl;
   std::cout << "Case 3: " << std::endl;
-  std::cout << msg3.get_prefix() << std::endl;
   std::cout << msg3.get_command() << std::endl;
   for (std::vector<std::string>::const_iterator it = msg3.get_params().begin();
        it != msg3.get_params().end(); it++) {
