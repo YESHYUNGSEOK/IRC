@@ -22,7 +22,6 @@ class Message {
  private:
   bool _is_valid;
   std::string _chunk;
-  std::string _prefix;
   e_cmd _command;
   std::vector<std::string> _params;
 

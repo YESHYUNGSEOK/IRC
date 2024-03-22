@@ -1,7 +1,7 @@
 #include "Message.hpp"
 
 Message::Message(std::string &chunk)
-    : _is_valid(true), _chunk(chunk), _prefix(""), _command(NONE), _params() {}
+    : _is_valid(true), _chunk(chunk), _command(NONE), _params() {}
 
 Message::~Message() {}
 
@@ -13,13 +13,6 @@ bool Message::parseMsg() {
   std::string::size_type spacePos = this->_chunk.find("\r\n");
   if (spacePos == std::string::npos) return false;
   std::string chunk_copy = this->_chunk.substr(0, spacePos);
-  if (chunk_copy[0] == ':') {
-    nextPos = chunk_copy.find(' ');
-    if (nextPos == std::string::npos) return false;
-    this->_prefix = chunk_copy.substr(1, nextPos - 1);
-    pos = nextPos + 1;
-    nextPos = pos;
-  }
   if (std::isalpha(chunk_copy[pos])) {
     while (std::isalpha(chunk_copy[pos])) {
       if (chunk_copy[pos] >= 'a' && chunk_copy[pos] <= 'z') return false;
