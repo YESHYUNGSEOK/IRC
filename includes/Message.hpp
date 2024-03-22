@@ -14,7 +14,6 @@ class Message {
 
   bool parseMsg();
 
-  const std::string& get_prefix() const;
   const e_cmd& get_command() const;
   const std::vector<std::string>& get_params() const;
   bool is_valid() const;
