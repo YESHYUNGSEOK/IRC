@@ -298,6 +298,43 @@ void Server::set_userinfo(Client *client, std::string msg)
     }
 }
 
+void Server::join_channel(Client *client, std::string msg)
+{
+    std::vector<std::string> tokens = split_tokens(msg, ' ');
+
+    if (tokens.size() == 1)
+    {
+        *client << ERR_NEEDMOREPARAMS;
+        return;
+    }
+    if (tokens.size() == 2 || tokens.size() == 3)
+    {
+        std::vector<std::string> channel_tokens = split_tokens(tokens[1], ',');
+        // if vector size is more than the limit ERR_TOOMANYCHANNELS
+        // 따로 참여할 수 있는 최대 채널 수를 정해야 할 듯
+        if (tokens.size() == 3)
+            std::vector<std::string> key_tokens = split_tokens(tokens[2], ',');
+        for (std::vector<std::string>::iterator it = channel_tokens.begin(); it != channel_tokens.end(); it++)
+        {
+            if ((*it).size() < 2 || ((*it)[0] != '#' && (*it)[0] != '&'))
+            {
+                *client << ERR_NOSUCHCHANNEL;
+                return;
+            }
+            // if channel is not exist or empty, create new channel
+                // if there is a key, create channel with key
+                // else create channel
+            // if channel exists
+                // if channel is invite only ERR_INVITEONLYCHAN
+                // if channel is full ERR_CHANNELISFULL
+                // if there is a key, check key
+                    // if key is wrong ERR_BADCHANNELKEY
+                    // else join channel
+                // else join channel
+        }
+    }
+}
+
 Server::Server() : _port(0), _password(""), _server_fd(0) {}
 
 Server::Server(const Server &src)

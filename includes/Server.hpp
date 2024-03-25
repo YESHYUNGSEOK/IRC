@@ -1,4 +1,5 @@
 #pragma once
+#include "Channel.hpp"
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
@@ -12,6 +13,7 @@
 #include <sstream>
 
 #include "Client.hpp"
+#include "Channel.hpp"
 #include "Message.hpp"
 #include "NumericReply.hpp"
 #include "ft_irc.hpp"
@@ -30,6 +32,8 @@ private:
     // std::map<int, Client *> _clients;
     std::set<Client *> _clients;
     // std::vector<struct sockaddr_in> _client_addrs;
+
+    std::set<Channel *> _channels;
 
     Server();
     Server(const Server &src);
@@ -58,6 +62,9 @@ public:
 
     // USER 명령어 처리
     void set_userinfo(Client *client, std::string msg);
+
+    // JOIN 명령어 처리
+    void join_channel(Client *client, std::string msg);
 };
 
 #endif
