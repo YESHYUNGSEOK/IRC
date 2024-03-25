@@ -1,6 +1,7 @@
-#include "Server.hpp"
+#include "../includes/Server.hpp"
+#include <string>
 
-Server::Server(int port, int password) : _port(port), _password(password)
+Server::Server(int port, std::string password) : _port(port), _password(password)
 {
     // 소켓 생성 (IPv4, TCP)
     _server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -221,37 +222,87 @@ void Server::capability(Client *client, std::stringstream &ss)
     }
 }
 
-void Server::register_client(Client *client, const int password)
+
+std::vector<std::string> Server::split_tokens(const std::string &str, char delim)
 {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delim))
+    {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+
+void Server::register_client(Client *client, std::string msg)
+{
+    std::vector<std::string> tokens = split_tokens(msg, ' ');
+    if (tokens.size() != 2)
+    {
+        *client << ERR_NEEDMOREPARAMS_STR;
+        return;
+    }
     if (client->get_registraion())
     {
         *client << ERR_ALREADYREGISTRED_STR;
+        return;
     }
-    else if (password == _password)
+    if (tokens[1] == _password)
     {
         client->set_register();
         std::cout << "Client " << client->get_fd() << " registered" << std::endl;
     }
-    else
+}
+
+void Server::set_nickname(Client *client, std::string msg)
+{
+    std::vector<std::string> tokens = split_tokens(msg, ' ');
+
+    if (tokens.size() == 1)
     {
-        *client << ERR_PASSWDMISMATCH_STR;
+        *client << ERR_NONICKNAMEGIVEN;
+        return;
+    }
+    else if (tokens.size() == 2){
+        for (std::set<Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
+        {
+            if ((*it)->get_nickname() == tokens[1])
+            {
+                *client << ERR_NICKNAMEINUSE;
+                return;
+            }
+        }
+        client->set_nickname(tokens[1]);
     }
 }
 
-void Server::set_nickname(Client *client, const std::string &nickname)
+void Server::set_userinfo(Client *client, std::string msg)
 {
+    std::vector<std::string> tokens = split_tokens(msg, ' ');
+
+    if (tokens.size() != 5)
+    {
+        *client << ERR_NEEDMOREPARAMS_STR;
+        return;
+    }
     if (client->get_registraion())
     {
-        client->set_nickname(nickname);
-        *client << RPL_WELCOME_STR;
-    }
-    else
-    {
-        *client << ERR_NOTREGISTERED_STR;
+        for (std::set<Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
+        {
+            if ((*it)->get_username() == tokens[1])
+            {
+                *client << ERR_ALREADYREGISTRED;
+                return;
+            }
+        }
+        client->set_userinfo(tokens[1], tokens[2], tokens[3], tokens[4]);
+        return;
     }
 }
 
-Server::Server() : _port(0), _password(0), _server_fd(0) {}
+Server::Server() : _port(0), _password(""), _server_fd(0) {}
 
 Server::Server(const Server &src)
     : _port(src._port), _password(src._password), _server_fd(src._server_fd) {}

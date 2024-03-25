@@ -20,7 +20,7 @@ class Server
 {
 private:
     int _port;
-    int _password;
+    std::string _password;
     int _server_fd;
     fd_set _master_fds;
     fd_set _read_fds;
@@ -36,7 +36,7 @@ private:
     Server &operator=(const Server &src);
 
 public:
-    Server(int port, int password);
+    Server(int port, std::string password);
     ~Server();
 
     void run();
@@ -45,14 +45,19 @@ public:
     void read_client(Client *client);
     void write_client(Client *client);
 
+    std::vector<std::string> split_tokens(const std::string &msg, const char delim);
+
     // CAP 명령어 처리
     void capability(Client *client, std::stringstream &cap_params);
 
     // PASS 명령어 처리
-    void register_client(Client *client, const int password);
+    void register_client(Client *client, std::string msg);
 
     // NICK 명령어 처리
-    void set_nickname(Client *client, const std::string &nickname);
+    void set_nickname(Client *client, std::string msg);
+
+    // USER 명령어 처리
+    void set_userinfo(Client *client, std::string msg);
 };
 
 #endif

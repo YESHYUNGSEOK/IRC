@@ -10,7 +10,11 @@ class Client {
  private:
   bool _is_registered;
   std::string _nickname;
+
   std::string _username;
+  std::string _hostname;
+  std::string _servername;
+  std::string _realname;
   SocketStream &_stream;
 
   Client();
@@ -21,12 +25,15 @@ class Client {
   Client(int server_fd);
   ~Client();
 
-  void set_register();
   bool get_registraion() const;
-
-  void set_nickname(const std::string &nickname);
-  const std::string &get_nickname() const;
   int get_fd() const;
+  const std::string &get_nickname() const;
+  const std::string &get_username() const;
+
+  void set_register();
+  void set_nickname(const std::string &nickname);
+  void set_userinfo(const std::string &username, const std::string &hostname, const std::string &servername, const std::string &realname);
+  
   std::string read_buffer();  // 연산자 오버로딩으로 변경해도 될 듯
   void recv();
   void send();
