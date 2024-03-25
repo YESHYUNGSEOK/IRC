@@ -26,7 +26,7 @@ public: // public methods
   //manage client
   void add_client(Client *client);
   void remove_client(Client *client);
-  bool is_client(Client *client) const;
+  bool is_client_in_channel(Client *client) const;
 
   //manage operator
   void add_operator(Client *client);
@@ -37,6 +37,9 @@ public: // public methods
   void invite_client(Client *client);
   bool is_invited(Client *client) const;
 
+  //set channel mode
+  void set_channel_mode(bool scope, bool invite_only);
+
 private: // private members
   std::string _name;
   std::string _key;
@@ -46,9 +49,9 @@ private: // private members
   {
     SCOPE,
     INVITE_ONLY
-  }
+  };
 
-  bool mode[2];
+  bool _mode[2];
   int _max_clients;
 
   std::set<Client *> _clients;
