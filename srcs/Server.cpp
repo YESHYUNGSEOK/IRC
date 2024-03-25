@@ -119,8 +119,6 @@ void Server::accept_new_client()
     _clients.insert(client); // 새로운 클라이언트를 _clients에 추가
 }
 
-#include <sstream>
-
 void Server::read_client(Client *client)
 {
     try
@@ -222,7 +220,6 @@ void Server::capability(Client *client, std::stringstream &ss)
     }
 }
 
-
 std::vector<std::string> Server::split_tokens(const std::string &str, char delim)
 {
     std::vector<std::string> tokens;
@@ -234,7 +231,6 @@ std::vector<std::string> Server::split_tokens(const std::string &str, char delim
     }
     return tokens;
 }
-
 
 void Server::register_client(Client *client, std::string msg)
 {
