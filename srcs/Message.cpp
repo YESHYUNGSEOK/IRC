@@ -62,7 +62,7 @@ bool Message::is_valid_command(const std::string &command) {
 
 bool Message::is_valid() const { return this->_is_valid; }
 
-const std::string &Message::get_prefix() const { return this->_prefix; }
+// const std::string &Message::get_prefix() const { return this->_prefix; }
 
 const e_cmd &Message::get_command() const { return this->_command; }
 
