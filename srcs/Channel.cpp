@@ -2,7 +2,7 @@
 // #include "Channel.hpp"
 
 Channel::Channel(std::string name, std::string key, bool scope, Client *host)
-      : _name(name), _key(key), _max_clients(1) {
+      : _name(name), _key(key), _max_clients(-1) {
   add_client(host);
   add_operator(host);
   if (scope == false) //public
@@ -10,6 +10,7 @@ Channel::Channel(std::string name, std::string key, bool scope, Client *host)
   else //private
     _mode[SCOPE] = true;
   _mode[INVITE_ONLY] = false;
+  //_max_clients = -1 means no limit
 }
 
 Channel::~Channel() {}
@@ -90,7 +91,6 @@ bool Channel::is_invited(Client *client) const {
   return _invited.find(client) != _invited.end();
 }
 
-void Channel::set_channel_mode(bool scope, bool invite_only) {
-  _mode[SCOPE] = scope;
-  _mode[INVITE_ONLY] = invite_only;
+void Channel::set_channel_mode(enum modeType mode, bool value) {
+  _mode[mode] = value;
 }

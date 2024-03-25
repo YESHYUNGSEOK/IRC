@@ -7,6 +7,13 @@
 
 #include "Client.hpp"
 
+enum modeType
+{
+  SCOPE, // private must have key
+  INVITE_ONLY,
+  TOPIC_RESTRICTED
+};
+
 class Channel {
 public: // constructor and destructor
   Channel(std::string name, std::string key, bool scope, Client *host);
@@ -38,20 +45,15 @@ public: // public methods
   bool is_invited(Client *client) const;
 
   //set channel mode
-  void set_channel_mode(bool scope, bool invite_only);
+  void set_channel_mode(enum modeType mode, bool value);
 
 private: // private members
   std::string _name;
   std::string _key;
   std::string _topic;
 
-  enum modeType
-  {
-    SCOPE,
-    INVITE_ONLY
-  };
 
-  bool _mode[2];
+  bool _mode[3];
   int _max_clients;
 
   std::set<Client *> _clients;
