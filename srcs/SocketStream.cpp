@@ -133,7 +133,6 @@ SocketStream &SocketStream::operator<<(const std::string &data) {
 SocketStream &SocketStream::operator>>(std::string &data) {
   const size_t pos = _read_buffer.find("\r\n");
   if (pos == std::string::npos) {
-    std::cerr << "Debug: " << _read_buffer << std::endl;
     throw NoNewlineException();
   } else if (pos + 2 > LINE_SIZE_MAX) {
     _read_buffer = _read_buffer.substr(pos + 2);
