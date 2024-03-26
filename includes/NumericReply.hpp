@@ -18,6 +18,25 @@ class Server;
 #define ERR_MSGTOOLONG 999
 #define ERR_MSGTOOLONG_STR ("999 ERR_MSGTOOLONG")
 
+#define SERVER_PREFIX (":localhost")
+
+#define CLIENT_SOURCE(client)                                      \
+  ((client).get_nickname() + "!" + (client).get_username() + "@" + \
+   (client).get_hostname())
+
+#define RPL_WELCOME(client)                                                \
+  ("001 " + (client).get_nickname() + " :Welcome to the FT_IRC Network " + \
+   CLIENT_SOURCE((client)) + "\r\n")
+
+#define RPL_CAP_LS(client) ((client) << "CAP * LS :\r\n")
+#define RPL_CAP_LIST(client) ((client) << "CAP * LIST :\r\n")
+#define RPL_CAP_NAK(client, params) \
+  ((client) << "CAP * NAK :" << params << "\r\n")
+
+#define ERR_INVALIDCAPCMD(client, command)                       \
+  ((client) << "410 " << client.get_nickname() << " " << command \
+            << ":Invalid CAP command\r\n")
+
 typedef enum NUMERIC {
   // ERR
   ERR_ALREADYREGISTRED = 462,
