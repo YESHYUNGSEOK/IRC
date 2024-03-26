@@ -2,6 +2,7 @@
 #define MESSAGE_HPP
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -9,22 +10,49 @@
 
 class Message {
  public:
-  Message(std::string& chunk);
-  virtual ~Message();
-
-  bool parseMsg();
-
-  const e_cmd& get_command() const;
-  const std::vector<std::string>& get_params() const;
-  bool is_valid() const;
+  typedef enum CMD {
+    PASS,
+    NICK,
+    USER,
+    OPER,  // 0-3
+    QUIT,
+    JOIN,
+    PART,
+    TOPIC,
+    MODE,  // 4-8
+    NAMES,
+    LIST,
+    INVITE,
+    KICK,  // 9-12
+    PRIVMSG,
+    WHO,
+    WHOIS,
+    WHOWAS,  // 13-16
+    KILL,
+    PING,
+    PONG,  // 17-19
+    CAP,   // 20
+    NONE   // 21
+  } e_cmd;
 
  private:
-  bool _is_valid;
-  std::string _chunk;
   e_cmd _command;
   std::vector<std::string> _params;
 
-  bool is_valid_command(const std::string& command);
+  Message();
+
+ public:
+  Message(std::string& line);
+  Message(const Message& src);
+  Message& operator=(const Message& other);
+  ~Message();
+
+  class InvalidCommandException : public std::exception {
+    virtual const char* what() const throw() { return "Invalid command"; }
+  };
+
+  e_cmd get_command() const;
+  const std::vector<std::string>& get_params() const;
 };
 
 #endif
