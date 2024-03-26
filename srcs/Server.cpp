@@ -106,24 +106,46 @@ void Server::accept_new_client() {
 
 // 클라이언트로부터 데이터를 읽어들이는 함수 - 수정중
 void Server::read_client(Client *client) {
-  try {
-    // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
-    client->recv();
+  // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
+  client->recv();
 
-    // 클라이언트의 버퍼로부터 데이터를 읽어들임
-    // 개행 단위로 처리를 위해 컨테이너로 반환하도록 구현 필요
-    std::string msg = client->read_buffer();
+  // 클라이언트의 버퍼로부터 데이터를 읽어들임
+  // 개행 단위로 처리를 위해 컨테이너로 반환하도록 구현 필요
+  std::vector<Message> messages;
 
-    // 대충 메시지 생성자 사용하고, 이를 채널에 전달하는 함수 호출
+  *client >> messages;
 
-    std::cout << "from " << client->get_fd() << ": [" << msg << "]"
-              << std::endl;
-  } catch (SocketStream::NoNewlineException &e) {  // 개행 문자 예외 - 무시
-    return;
-  } catch (
-      SocketStream::MessageTooLongException &e) {  // 메시지 길이 예외 - 무시
-    *client << ERR_MSGTOOLONG_STR;
-    return;
+  // 대충 메시지 생성자 사용하고, 이를 채널에 전달하는 함수 호출
+
+  std::vector<Message>::const_iterator it = messages.begin();
+  for (; it != messages.end(); it++) {
+    switch (it->get_command()) {
+      case Message::CAP:
+        // capability(client, it->get_params());
+        break;
+      case Message::PASS:
+        // confirm_password(client, it->get_params()[0]);
+        break;
+      case Message::NICK:
+        // set_nickname(client, it->get_params()[0]);
+        break;
+      case Message::USER:
+        // set_userinfo(client, it->get_params()[0], it->get_params()[1],
+        // it->get_params()[2], it->get_params()[3]);
+        break;
+      case Message::JOIN:
+        join_channel(client, it->get_params()[0]);
+        break;
+      default:
+        break;
+    }
+    std::cout << "command: " << it->get_command() << std::endl;
+    std::vector<std::string>::const_iterator it2 = it->get_params().begin();
+    std::cout << "params: " << it->get_params().size() << ": ";
+    for (; it2 != it->get_params().end(); it2++) {
+      std::cout << *it2 << " ";
+    }
+    std::cout << std::endl;
   }
 }
 
@@ -131,33 +153,6 @@ void Server::write_client(Client *client) {
   // 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
   client->send();
 }
-
-// void Server::capability(Client *client, std::stringstream &ss) {
-//   std::string cap_cmd;
-
-//   ss >> cap_cmd;
-
-//   if (cap_cmd == "LS") {
-//     std::cout << "ls" << std::endl;
-
-//     std::string cap_version;
-//     ss >> cap_version;
-
-//     std::cout << cap_version << std::endl;
-//     if (cap_version == "302") {
-//       // *client << "CAP * LS :multi-prefix\r\n";
-//       *client << "CAP * LS :\r\n";
-//     } else {
-//       // *client << ERR_UNKNOWNCAPVERSION_STR;
-//     }
-//   } else if (cap_cmd == "REQ") {
-//     // *client << RPL_CAP_REQ_STR;
-//   } else if (cap_cmd == "END") {
-//     // *client << RPL_CAP_END_STR;
-//   } else {
-//     // *client << ERR_UNKNOWNCAPCMD_STR;
-//   }
-// }
 
 std::vector<std::string> Server::split_tokens(const std::string &str,
                                               char delim) {
@@ -169,22 +164,6 @@ std::vector<std::string> Server::split_tokens(const std::string &str,
   }
   return tokens;
 }
-
-// void Server::register_client(Client *client, std::string msg) {
-//   std::vector<std::string> tokens = split_tokens(msg, ' ');
-//   if (tokens.size() != 2) {
-//     *client << ERR_NEEDMOREPARAMS_STR;
-//     return;
-//   }
-//   if (client->get_registraion()) {
-//     *client << ERR_ALREADYREGISTRED_STR;
-//     return;
-//   }
-//   if (tokens[1] == _password) {
-//     // client->set_register();
-//     std::cout << "Client " << client->get_fd() << " registered" << std::endl;
-//   }
-// }
 
 bool Server::check_channel_name(
     const std::vector<std::string> &channel_tokens) const {
