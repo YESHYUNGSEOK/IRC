@@ -90,7 +90,7 @@ class Client {
   bool operator>=(const Client &other);
   Client &operator<<(const std::string &data);
   Client &operator>>(std::string &data);
-  Client &operator>>(std::vector<std::string> &vec);
+  Client &operator>>(std::vector<Message> &vec);
 };
 
 #endif  // CLIENT_HPP
