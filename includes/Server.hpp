@@ -16,6 +16,8 @@
 #include "NumericReply.hpp"
 #include "ft_irc.hpp"
 
+class Client;
+
 class Server {
  private:
   int _port;
@@ -48,7 +50,7 @@ class Server {
   void capability(Client *client, std::stringstream &cap_params);
 
   // PASS 명령어 처리
-  //   void register_client(Client *client, const int password);
+  void confirm_password(Client *client, const std::string &password);
 
   // NICK 명령어 처리
   //   void set_nickname(Client *client, const std::string &nickname);

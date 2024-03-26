@@ -66,19 +66,19 @@ void Server::run() {
             write_client(*it);
           }
           it++;
-        } catch (SocketStream::SystemCallException
-                     &e) {  // 소켓 시스템 콜 예외 - 복구 불가능
+        } catch (SocketStream::SystemCallException &e) {
+          // 소켓 시스템 콜 예외 - 복구 불가능
           std::cerr << "Error: " << e.what() << std::endl;
           FD_CLR((*it)->get_fd(), &_master_fds);
           delete *it;
           it = _clients.erase(it);
-        } catch (SocketStream::ConnectionClosedException
-                     &e) {  // 클라이언트 연결 종료 예외 - 복구 불가능
+        } catch (SocketStream::ConnectionClosedException &e) {
+          // 클라이언트 연결 종료 - 복구 불가능
           FD_CLR((*it)->get_fd(), &_master_fds);
           delete *it;
           it = _clients.erase(it);
-        } catch (...) {  // 그 외 예외 - 일단 에러 메시지 출력 후 클라이언트
-                         // 연결 종료
+        } catch (...) {
+          // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
           FD_CLR((*it)->get_fd(), &_master_fds);
           delete *it;
           it = _clients.erase(it);
@@ -87,11 +87,11 @@ void Server::run() {
       try {
         if (FD_ISSET(_server_fd, &_read_fds))  // accept event
           accept_new_client();
-      } catch (SocketStream::SystemCallException
-                   &e) {  // 소켓 시스템 콜 예외 - 복구 불가능
+      } catch (SocketStream::SystemCallException &e) {
+        // 소켓 시스템 콜 예외 - 복구 불가능
         std::cerr << "Error: " << e.what() << std::endl;
-      } catch (
-          ...) {  // 그 외 예외 - 일단 에러 메시지 출력 후 클라이언트 연결 종료
+      } catch (...) {
+        // 그 외 예외 - 일단 에러 메시지 출력 후 클라이언트 연결 종료
         std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
       }
     }
@@ -105,14 +105,11 @@ void Server::accept_new_client() {
   _clients.insert(client);  // 새로운 클라이언트를 _clients에 추가
 }
 
-#include <sstream>
-
 void Server::read_client(Client *client) {
   // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
   client->recv();
 
   // 클라이언트의 버퍼로부터 데이터를 읽어들임
-  // 개행 단위로 처리를 위해 컨테이너로 반환하도록 구현 필요
   std::vector<std::string> messages;
 
   *client >> messages;
@@ -121,7 +118,6 @@ void Server::read_client(Client *client) {
   while (it != messages.end()) {
     // 메시지 처리 임시 하드코딩 - 나중에 함수로 분리
     std::stringstream ss(*it);
-
     std::string command;
 
     ss >> command;
@@ -146,10 +142,6 @@ void Server::read_client(Client *client) {
       if (realname[0] == ':')
         realname = realname.substr(1, realname.size() - 1);
 
-      std::cout << "username: " << username << std::endl;
-      std::cout << "hostname: " << hostname << std::endl;
-      std::cout << "servername: " << servername << std::endl;
-      std::cout << "realname: " << realname << std::endl;
       client->set_user(username, hostname, servername, realname);
     } else if (command == "JOIN") {
       *client << "461 * JOIN :Not enough parameters\r\n";
@@ -164,8 +156,7 @@ void Server::read_client(Client *client) {
 }
 
 void Server::write_client(Client *client) {
-  // 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
-  client->send();
+  client->send();  // 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
 }
 
 void Server::capability(Client *client, std::stringstream &ss) {
@@ -173,27 +164,25 @@ void Server::capability(Client *client, std::stringstream &ss) {
 
   ss >> cap_cmd;
 
-  if (cap_cmd == "LS") {
-    std::cout << "ls" << std::endl;
+  if (cap_cmd == "LS") {  // 기능 없음
+    RPL_CAP_LS((*client));
+  } else if (cap_cmd == "LIST") {  // 기능 없음
+    RPL_CAP_LIST((*client));
+  } else if (cap_cmd == "REQ") {  // 그냥 전부 NAK으로 처리 TODO: 나중에 수정
+    std::string params;
+    ss >> params;
 
-    std::string cap_version;
-    ss >> cap_version;
-
-    std::cout << cap_version << std::endl;
-    if (cap_version == "302") {
-      // *client << "CAP * LS :multi-prefix\r\n";
-      *client << "CAP * LS :\r\n";
-    } else {
-      // *client << ERR_UNKNOWNCAPVERSION_STR;
-    }
-  } else if (cap_cmd == "REQ") {
-    // *client << RPL_CAP_REQ_STR;
-  } else if (cap_cmd == "END") {
+    if (params[0] == ':') params = params.substr(1);
+    RPL_CAP_NAK((*client), params);
+  } else if (cap_cmd == "END") {  // 기능 협상 종료
     client->finish_negotiation();
-    // *client << RPL_CAP_END_STR;
-  } else {
-    // *client << ERR_UNKNOWNCAPCMD_STR;
+  } else {  // 잘못된 CAP 명령어
+    ERR_INVALIDCAPCMD((*client), cap_cmd);
   }
+}
+
+void Server::confirm_password(Client *client, const std::string &password) {
+  if (std::stoi(password) == _password) client->confirm_password();
 }
 
 Server::Server() : _port(0), _password(0), _server_fd(0) {}
