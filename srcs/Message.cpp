@@ -1,71 +1,62 @@
 #include "Message.hpp"
 
-Message::Message(std::string &chunk)
-    : _is_valid(true), _chunk(chunk), _command(NONE), _params() {}
+Message::Message(std::string &line)
+    : _command(NONE), _params(std::vector<std::string>()) {
+  std::string::size_type cmd_size = line.find(" ");
+  if (cmd_size == std::string::npos) return;
 
-Message::~Message() {}
-
-bool Message::parseMsg() {
-  std::string::size_type pos = 0;
-  std::string::size_type nextPos = 0;
-
-  if (this->_chunk.empty()) return false;
-  std::string::size_type spacePos = this->_chunk.find("\r\n");
-  if (spacePos == std::string::npos) return false;
-  std::string chunk_copy = this->_chunk.substr(0, spacePos);
-  if (std::isalpha(chunk_copy[pos])) {
-    while (std::isalpha(chunk_copy[pos])) {
-      if (chunk_copy[pos] >= 'a' && chunk_copy[pos] <= 'z') return false;
-      pos++;
-    }
-    if (is_valid_command(chunk_copy.substr(nextPos, pos - nextPos)) == false)
-      return false;
-  } else
-    return false;
-  if (chunk_copy[pos] == ' ') {
-    if (++pos == chunk_copy.size()) return true;
-    std::string token;
-    for (; pos < chunk_copy.size(); pos++) {
-      if (chunk_copy[pos] == ' ') {
-        if (!token.empty()) {
-          this->_params.push_back(token);
-          token.clear();
-        }
-      } else if (chunk_copy[pos] == ':') {
-        while (++pos < chunk_copy.size()) token += chunk_copy[pos];
-        this->_params.push_back(token);
-        token.clear();
-      } else {
-        token += chunk_copy[pos];
-        if (pos == chunk_copy.size() - 1) this->_params.push_back(token);
-      }
-    }
-    return true;
-  } else
-    return false;
-}
-
-bool Message::is_valid_command(const std::string &command) {
-  const std::string cmdArr[20] = {
+  std::string cmd = line.substr(0, cmd_size);
+  for (std::string::size_type i = 0; i < cmd.size(); i++) {
+    if (!isalpha(cmd[i])) return;
+    if (cmd[i] >= 'a' && cmd[i] <= 'z') cmd[i] = toupper(cmd[i]);
+  }
+  const std::string cmd_arr[21] = {
       "PASS",  "NICK",  "USER",   "OPER", "QUIT",   "JOIN", "PART",
       "TOPIC", "MODE",  "NAMES",  "LIST", "INVITE", "KICK", "PRIVMSG",
-      "WHO",   "WHOIS", "WHOWAS", "KILL", "PING",   "PONG"};
-  if (command.empty()) return false;
-  for (int i = 0; i < 20; i++) {
-    if (command == cmdArr[i]) {
-      this->_command = static_cast<e_cmd>(i);
-      return true;
+      "WHO",   "WHOIS", "WHOWAS", "KILL", "PING",   "PONG", "CAP"};
+  for (int i = 0; i < 21; i++) {
+    if (cmd == cmd_arr[i]) {
+      _command = static_cast<e_cmd>(i);
+      break;
     }
   }
-  return false;
+  if (_command == NONE) return;
+
+  line = line.substr(line.find_first_not_of(" ", cmd_size));
+
+  std::string *colon_param = NULL;
+  std::string::size_type colon_pos = line.find(":");
+  if (colon_pos != std::string::npos) {
+    colon_param = new std::string(line.substr(colon_pos + 1, line.size()));
+    line = line.substr(0, colon_pos);
+  }
+
+  while (line.length()) {
+    std::string::size_type space_pos = line.find(" ");
+    if (space_pos == std::string::npos) {
+      _params.push_back(line.substr(0, line.size()));
+      break;
+    }
+    _params.push_back(line.substr(0, space_pos));
+    line = line.substr(line.find_first_not_of(" ", space_pos));
+  }
+  if (colon_param) {
+    _params.push_back(*colon_param);
+    delete colon_param;
+  }
+  *_params.rbegin() = _params.rbegin()->substr(0, _params.rbegin()->size() - 2);
 }
 
-bool Message::is_valid() const { return this->_is_valid; }
+Message::Message(const Message &src)
+    : _command(src._command), _params(src._params) {}
+Message &Message::operator=(const Message &other) {
+  this->_command = other._command;
+  this->_params = other._params;
+  return *this;
+}
+Message::~Message() {}
 
-// const std::string &Message::get_prefix() const { return this->_prefix; }
-
-const e_cmd &Message::get_command() const { return this->_command; }
-
+Message::e_cmd Message::get_command() const { return this->_command; }
 const std::vector<std::string> &Message::get_params() const {
   return this->_params;
 }

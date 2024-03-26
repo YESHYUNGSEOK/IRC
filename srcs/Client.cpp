@@ -125,12 +125,14 @@ Client &Client::operator>>(std::string &data) {
   _stream >> data;
   return *this;
 }
-Client &Client::operator>>(std::vector<std::string> &vec) {
+Client &Client::operator>>(std::vector<Message> &vec) {
   while (true) {
     try {
-      std::string msg = read_buffer();
+      std::string msg;
 
-      vec.push_back(msg);
+      _stream >> msg;
+      Message m(msg);
+      vec.push_back(m);
     } catch (SocketStream::NoNewlineException &e) {
       break;
     } catch (SocketStream::MessageTooLongException &e) {

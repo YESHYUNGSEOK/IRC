@@ -5,33 +5,9 @@
 #include <map>
 #include <string>
 
-typedef enum CMD {
-  PASS,
-  NICK,
-  USER,
-  OPER,  // 0-3
-  QUIT,
-  JOIN,
-  PART,
-  TOPIC,
-  MODE,  // 4-8
-  NAMES,
-  LIST,
-  INVITE,
-  KICK,  // 9-12
-  PRIVMSG,
-  WHO,
-  WHOIS,
-  WHOWAS,  // 13-16
-  KILL,
-  PING,
-  PONG,  // 17-19
-  NONE   // 20
-} e_cmd;
-
 class CommandHandler {
  public:
-  static void getCommand(e_cmd cmd);
+  // static void getCommand(e_cmd cmd);
   // every command functions
   static void pass();     // param: serverPS
   static void nick();     // param: user list(nick, user, host, server, real)
