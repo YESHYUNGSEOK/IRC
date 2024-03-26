@@ -1,7 +1,5 @@
 #include "../includes/Server.hpp"
 
-#include <string>
-
 Server::Server(int port, std::string password)
     : _port(port), _password(password) {
   // 소켓 생성 (IPv4, TCP)
@@ -48,12 +46,10 @@ void Server::run() {
     _read_fds = _master_fds;  // select()를 호출할 때마다 초기화
     // _write_fds = _master_fds;
 
-    const int max_sock_fd = FD_SETSIZE;
-    // _clients.empty() ? _server_fd : (*_clients.rbegin())->get_fd();
+    // const int max_sock_fd = FD_SETSIZE;
 
     // select()는 이벤트가 발생한 파일 디스크립터의 개수를 반환
-    // int event = select(FD_SETSIZE, &_read_fds, &_write_fds, NULL, NULL);
-    const int event = select(max_sock_fd, &_read_fds, NULL, NULL, NULL);
+    const int event = select(FD_SETSIZE, &_read_fds, NULL, NULL, NULL);
 
     if (event < 0)
       throw std::runtime_error("select() failed: " +
@@ -69,19 +65,19 @@ void Server::run() {
             write_client(*it);
           }
           it++;
-        } catch (SocketStream::SystemCallException
-                     &e) {  // 소켓 시스템 콜 예외 - 복구 불가능
+        } catch (SocketStream::SystemCallException &e) {
+          // 소켓 시스템 콜 예외 - 복구 불가능
           std::cerr << "Error: " << e.what() << std::endl;
           FD_CLR((*it)->get_fd(), &_master_fds);
           delete *it;
           it = _clients.erase(it);
-        } catch (SocketStream::ConnectionClosedException
-                     &e) {  // 클라이언트 연결 종료 예외 - 복구 불가능
+        } catch (SocketStream::ConnectionClosedException &e) {
+          // 클라이언트 연결 종료 예외 - 복구 불가능
           FD_CLR((*it)->get_fd(), &_master_fds);
           delete *it;
           it = _clients.erase(it);
-        } catch (...) {  // 그 외 예외 - 일단 에러 메시지 출력 후 클라이언트
-                         // 연결 종료
+        } catch (...) {
+          // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
           FD_CLR((*it)->get_fd(), &_master_fds);
           delete *it;
           it = _clients.erase(it);
@@ -90,11 +86,11 @@ void Server::run() {
       try {
         if (FD_ISSET(_server_fd, &_read_fds))  // accept event
           accept_new_client();
-      } catch (SocketStream::SystemCallException
-                   &e) {  // 소켓 시스템 콜 예외 - 복구 불가능
+      } catch (SocketStream::SystemCallException &e) {
+        // 소켓 시스템 콜 예외 - 복구 불가능
         std::cerr << "Error: " << e.what() << std::endl;
-      } catch (
-          ...) {  // 그 외 예외 - 일단 에러 메시지 출력 후 클라이언트 연결 종료
+      } catch (...) {
+        // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
         std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
       }
     }
@@ -108,6 +104,7 @@ void Server::accept_new_client() {
   _clients.insert(client);  // 새로운 클라이언트를 _clients에 추가
 }
 
+// 클라이언트로부터 데이터를 읽어들이는 함수 - 수정중
 void Server::read_client(Client *client) {
   try {
     // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
@@ -117,29 +114,7 @@ void Server::read_client(Client *client) {
     // 개행 단위로 처리를 위해 컨테이너로 반환하도록 구현 필요
     std::string msg = client->read_buffer();
 
-    {  // 메시지 처리 임시 하드코딩
-      std::stringstream ss(msg);
-
-      std::string command;
-
-      ss >> command;
-
-      if (command == "CAP") {
-        capability(client, ss);
-      } else if (command == "PASS") {
-        int password;
-        ss >> password;
-        // register_client(client, password);
-      } else if (command == "NICK") {
-        std::string nickname;
-        ss >> nickname;
-        set_nickname(client, nickname);
-      } else if (command == "JOIN") {
-        *client << "461 * JOIN :Not enough parameters\r\n";
-      } else {
-        // *client << ERR_UNKNOWNCOMMAND_STR;
-      }
-    }
+    // 대충 메시지 생성자 사용하고, 이를 채널에 전달하는 함수 호출
 
     std::cout << "from " << client->get_fd() << ": [" << msg << "]"
               << std::endl;
@@ -157,32 +132,32 @@ void Server::write_client(Client *client) {
   client->send();
 }
 
-void Server::capability(Client *client, std::stringstream &ss) {
-  std::string cap_cmd;
+// void Server::capability(Client *client, std::stringstream &ss) {
+//   std::string cap_cmd;
 
-  ss >> cap_cmd;
+//   ss >> cap_cmd;
 
-  if (cap_cmd == "LS") {
-    std::cout << "ls" << std::endl;
+//   if (cap_cmd == "LS") {
+//     std::cout << "ls" << std::endl;
 
-    std::string cap_version;
-    ss >> cap_version;
+//     std::string cap_version;
+//     ss >> cap_version;
 
-    std::cout << cap_version << std::endl;
-    if (cap_version == "302") {
-      // *client << "CAP * LS :multi-prefix\r\n";
-      *client << "CAP * LS :\r\n";
-    } else {
-      // *client << ERR_UNKNOWNCAPVERSION_STR;
-    }
-  } else if (cap_cmd == "REQ") {
-    // *client << RPL_CAP_REQ_STR;
-  } else if (cap_cmd == "END") {
-    // *client << RPL_CAP_END_STR;
-  } else {
-    // *client << ERR_UNKNOWNCAPCMD_STR;
-  }
-}
+//     std::cout << cap_version << std::endl;
+//     if (cap_version == "302") {
+//       // *client << "CAP * LS :multi-prefix\r\n";
+//       *client << "CAP * LS :\r\n";
+//     } else {
+//       // *client << ERR_UNKNOWNCAPVERSION_STR;
+//     }
+//   } else if (cap_cmd == "REQ") {
+//     // *client << RPL_CAP_REQ_STR;
+//   } else if (cap_cmd == "END") {
+//     // *client << RPL_CAP_END_STR;
+//   } else {
+//     // *client << ERR_UNKNOWNCAPCMD_STR;
+//   }
+// }
 
 std::vector<std::string> Server::split_tokens(const std::string &str,
                                               char delim) {
@@ -210,44 +185,6 @@ std::vector<std::string> Server::split_tokens(const std::string &str,
 //     std::cout << "Client " << client->get_fd() << " registered" << std::endl;
 //   }
 // }
-
-void Server::set_nickname(Client *client, std::string msg) {
-  std::vector<std::string> tokens = split_tokens(msg, ' ');
-
-  if (tokens.size() == 1) {
-    // *client << ERR_NONICKNAMEGIVEN;
-    return;
-  } else if (tokens.size() == 2) {
-    for (std::set<Client *>::iterator it = _clients.begin();
-         it != _clients.end(); it++) {
-      if ((*it)->get_nickname() == tokens[1]) {
-        // *client << ERR_NICKNAMEINUSE;
-        return;
-      }
-    }
-    client->set_nickname(tokens[1]);
-  }
-}
-
-void Server::set_userinfo(Client *client, std::string msg) {
-  std::vector<std::string> tokens = split_tokens(msg, ' ');
-
-  if (tokens.size() != 5) {
-    *client << ERR_NEEDMOREPARAMS_STR;
-    return;
-  }
-  //   if (client->get_registraion()) {
-  //     for (std::set<Client *>::iterator it = _clients.begin();
-  //          it != _clients.end(); it++) {
-  //       if ((*it)->get_username() == tokens[1]) {
-  //         // *client << ERR_ALREADYREGISTRED;
-  //         return;
-  //       }
-  //     }
-  //     client->set_userinfo(tokens[1], tokens[2], tokens[3], tokens[4]);
-  //     return;s
-  //   }
-}
 
 bool Server::check_channel_name(
     const std::vector<std::string> &channel_tokens) const {
