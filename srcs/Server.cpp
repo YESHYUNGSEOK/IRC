@@ -356,12 +356,12 @@ Server::Server() : _port(0), _password(""), _server_fd(0) {}
 Server::Server(const Server &src)
 	: _port(src._port), _password(src._password), _server_fd(src._server_fd) {}
 
-Server &Server::operator=(const Server &src)
-{
-	_port = src._port;
-	_password = src._password;
-	_server_fd = src._server_fd;
-	return *this;
+
+Server &Server::operator=(const Server &src) {
+  _port = src._port;
+  _password = src._password;
+  _server_fd = src._server_fd;
+  return *this;
 }
 
 Server::~Server() { close(_server_fd); }

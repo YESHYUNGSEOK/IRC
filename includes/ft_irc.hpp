@@ -19,4 +19,8 @@
 #include <iostream>
 #include <stdexcept>
 
+#define DEBUG_PRINT(x)                                              \
+  (std::cout << __FILE__ << ":" << __LINE__ << ": " << __FUNCTION__ \
+             << ": Debug: " << #x << " = " << (x) << std::endl)
+
 #endif
