@@ -5,35 +5,36 @@
 #include <vector>
 
 #include "Message.hpp"
+#include "NumericReply.hpp"
 #include "SocketStream.hpp"
 #include "ft_irc.hpp"
 
-#define IS_CAP_NEGOTIATED(_status) ((_status & 0x01) == 0x01)
-#define IS_IN_NEGOTIATION(_status) ((_status & 0x02) == 0x02)
-#define IS_PASS_CONFIRMED(_status) ((_status & 0x04) == 0x04)
-#define IS_NICK_SET(_status) ((_status & 0x08) == 0x08)
-#define IS_USER_SET(_status) ((_status & 0x10) == 0x10)
-#define IS_REGISTERED(_status) ((_status & 0x1E) == 0x1E)
+#define IS_CAP_NEGOTIATED(client) (((client)._status & 0x01) == 0x01)
+#define IS_IN_NEGOTIATION(client) (((client)._status & 0x02) == 0x02)
+#define IS_PASS_CONFIRMED(client) (((client)._status & 0x04) == 0x04)
+#define IS_NICK_SET(client) (((client)._status & 0x08) == 0x08)
+#define IS_USER_SET(client) (((client)._status & 0x10) == 0x10)
+#define IS_REGISTERED(client) (((client)._status & 0x1E) == 0x1E)
 
-#define SET_CAP_NEGOTIATED(_status) (_status |= 0x01)
-#define SET_IN_NEGOTIATION(_status) (_status |= 0x02)
-#define SET_PASS_CONFIRMED(_status) (_status |= 0x04)
-#define SET_NICK_SET(_status) (_status |= 0x08)
-#define SET_USER_SET(_status) (_status |= 0x10)
-#define SET_REGISTERED(_status) (_status |= 0x1E)
+#define SET_CAP_NEGOTIATED(client) ((client)._status |= 0x01)
+#define SET_IN_NEGOTIATION(client) ((client)._status |= 0x02)
+#define SET_PASS_CONFIRMED(client) ((client)._status |= 0x04)
+#define SET_NICK_SET(client) ((client)._status |= 0x08)
+#define SET_USER_SET(client) ((client)._status |= 0x10)
+#define SET_REGISTERED(client) ((client)._status |= 0x1E)
 
-#define UNSET_CAP_NEGOTIATED(_status) (_status &= ~0x01)
-#define UNSET_IN_NEGOTIATION(_status) (_status &= ~0x02)
-#define UNSET_PASS_CONFIRMED(_status) (_status &= ~0x04)
-#define UNSET_NICK_SET(_status) (_status &= ~0x08)
-#define UNSET_USER_SET(_status) (_status &= ~0x10)
-#define UNSET_REGISTERED(_status) (_status &= ~0x1E)
+#define UNSET_CAP_NEGOTIATED(client) ((client)._status &= ~0x01)
+#define UNSET_IN_NEGOTIATION(client) ((client)._status &= ~0x02)
+#define UNSET_PASS_CONFIRMED(client) ((client)._status &= ~0x04)
+#define UNSET_NICK_SET(client) ((client)._status &= ~0x08)
+#define UNSET_USER_SET(client) ((client)._status &= ~0x10)
+#define UNSET_REGISTERED(client) ((client)._status &= ~0x1E)
 
 class Client {
  private:
-  unsigned int _status;
   std::string _nickname;
   std::string _username;
+  std::string _hostname;
   std::string _realname;
   SocketStream &_stream;
 
@@ -42,6 +43,7 @@ class Client {
   Client &operator=(const Client &src);
 
  public:
+  unsigned int _status;  // 수동으로 조작 금지
   Client(int server_fd);
   ~Client();
 
@@ -62,9 +64,15 @@ class Client {
   // getter, setter
   unsigned int get_status() const;  // 가능하면 private으로 변경하는게 좋을 듯
   bool is_registered() const;
-  void set_nickname(const std::string &nickname);
   const std::string &get_nickname() const;
+  const std::string &get_username() const;
+  const std::string &get_realname() const;
+  const std::string &get_hostname() const;
   int get_fd() const;
+
+  void set_nickname(const std::string &nickname);
+  void set_username(const std::string &username);
+  void set_realname(const std::string &realname);
 
   // 연산자 오버로딩
   bool operator==(const Client &other);
