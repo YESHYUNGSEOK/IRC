@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <signal.h>
+#include <string>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -21,7 +22,7 @@ int main(int argc, char **argv) {
   (void)argc;
 
   try {
-    Server server(atoi(argv[1]), atoi(argv[2]));
+    Server server(atoi(argv[1]), std::string(argv[2]));
     server.run();
   } catch (std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;

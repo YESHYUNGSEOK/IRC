@@ -9,6 +9,22 @@ Client::~Client() {
   delete &_stream;
 }
 
+void Client::set_register() { _is_registered = true; }
+bool Client::get_registraion() const { return _is_registered; }
+void Client::set_nickname(const std::string &nickname) { _nickname = nickname; }
+const std::string &Client::get_nickname() const { return _nickname; }
+const std::string &Client::get_username() const { return _username; }
+
+void Client::set_userinfo(const std::string &username, const std::string &hostname,
+                          const std::string &servername, const std::string &realname) {
+  _username = username;
+  _hostname = hostname;
+  _servername = servername;
+  _realname = realname;
+}
+
+int Client::get_fd() const { return _stream.get_fd(); }
+
 std::string Client::read_buffer() {
   std::string msg;
   _stream >> msg;
