@@ -58,6 +58,11 @@ bool Channel::is_client_in_channel(Client *client) const
   return _clients.find(client) != _clients.end();
 }
 
+std::set<Client *> &Channel::get_clients()
+{
+  return _clients;
+}
+
 void Channel::add_operator(Client *client)
 {
   if (is_client_in_channel(client) == false)
@@ -89,6 +94,11 @@ void Channel::remove_operator(Client *client)
 bool Channel::is_operator(Client *client) const
 {
   return _operators.find(client) != _operators.end();
+}
+
+std::set<Client *> &Channel::get_operators()
+{
+  return _operators;
 }
 
 void Channel::invite_client(Client *client)
