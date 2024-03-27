@@ -58,6 +58,18 @@ bool Channel::is_client_in_channel(Client *client) const
   return _clients.find(client) != _clients.end();
 }
 
+bool Channel::is_client_in_channel(std::string nickname) const
+{
+  for (std::set<Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+  {
+    if ((*it)->get_nickname() == nickname)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::set<Client *> &Channel::get_clients()
 {
   return _clients;
@@ -122,4 +134,9 @@ bool Channel::is_invited(Client *client) const
 void Channel::set_channel_mode(enum modeType mode, bool value)
 {
   _mode[mode] = value;
+}
+
+bool Channel::get_channel_mode(enum modeType mode) const
+{
+  return _mode[mode];
 }

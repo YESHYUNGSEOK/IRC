@@ -37,6 +37,7 @@ public: // public methods
   void add_client(Client *client);
   void remove_client(Client *client);
   bool is_client_in_channel(Client *client) const;
+  bool is_client_in_channel(std::string nickname) const;
   std::set<Client *> &get_clients();
 
   // manage operator
@@ -51,6 +52,7 @@ public: // public methods
 
   // set channel mode
   void set_channel_mode(enum modeType mode, bool value);
+  bool get_channel_mode(enum modeType mode) const;
 
 private: // private members
   std::string _name;
