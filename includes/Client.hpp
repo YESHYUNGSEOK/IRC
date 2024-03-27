@@ -8,6 +8,7 @@
 #include "NumericReply.hpp"
 #include "SocketStream.hpp"
 #include "ft_irc.hpp"
+#include "Channel.hpp"
 
 class SocketStream;
 
@@ -32,8 +33,9 @@ class SocketStream;
 #define UNSET_USER_SET(client) ((client)._status &= ~0x10)
 #define UNSET_REGISTERED(client) ((client)._status &= ~0x1E)
 
-class Client {
- private:
+class Client
+{
+private:
   std::string _nickname;
   std::string _username;
   std::string _hostname;
@@ -41,18 +43,20 @@ class Client {
   std::string _realname;
   SocketStream &_stream;
 
+  std::vector<Channel *> _channels;
+
   Client();
   Client(const Client &src);
   Client &operator=(const Client &src);
 
- public:
-  unsigned int _status;  // 수동으로 조작 금지
+public:
+  unsigned int _status; // 수동으로 조작 금지
   Client(int server_fd);
   ~Client();
 
   // 시스템콜 관련 함수
 
-  std::string read_buffer();  // 연산자 오버로딩으로 변경해도 될 듯
+  std::string read_buffer(); // 연산자 오버로딩으로 변경해도 될 듯
   void recv();
   void send();
 
@@ -67,7 +71,7 @@ class Client {
   void register_client();
 
   // getter, setter
-  unsigned int get_status() const;  // 가능하면 private으로 변경하는게 좋을 듯
+  unsigned int get_status() const; // 가능하면 private으로 변경하는게 좋을 듯
   bool is_registered() const;
   const std::string &get_nickname() const;
   const std::string &get_username() const;
@@ -81,6 +85,10 @@ class Client {
   void set_user(const std::string &username, const std::string &hostname,
                 const std::string &servername, const std::string &realname);
 
+  std::vector<Channel *> &get_channels();
+  void join_channel(Channel *channel);
+  void part_channel(Channel *channel);
+
   // 연산자 오버로딩
   bool operator==(const Client &other);
   bool operator!=(const Client &other);
@@ -93,4 +101,4 @@ class Client {
   Client &operator>>(std::vector<Message> &vec);
 };
 
-#endif  // CLIENT_HPP
+#endif // CLIENT_HPP
