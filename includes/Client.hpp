@@ -4,12 +4,14 @@
 
 #include <vector>
 
+#include "Channel.hpp"
 #include "Message.hpp"
 #include "NumericReply.hpp"
 #include "SocketStream.hpp"
 #include "ft_irc.hpp"
-#include "Channel.hpp"
 
+class Channel;
+class Message;
 class SocketStream;
 
 #define IS_CAP_NEGOTIATED(client) (((client)._status & 0x01) == 0x01)
@@ -33,9 +35,8 @@ class SocketStream;
 #define UNSET_USER_SET(client) ((client)._status &= ~0x10)
 #define UNSET_REGISTERED(client) ((client)._status &= ~0x20)
 
-class Client
-{
-private:
+class Client {
+ private:
   std::string _nickname;
   std::string _username;
   std::string _hostname;
@@ -48,8 +49,8 @@ private:
   Client(const Client &src);             // 사용하지 않는 생성자
   Client &operator=(const Client &src);  // 사용하지 않는 연산자
 
-public:
-  unsigned int _status; // 수동으로 조작 금지
+ public:
+  unsigned int _status;  // 수동으로 조작 금지
   Client(int server_fd);
   ~Client();
 
@@ -97,4 +98,4 @@ public:
   Client &operator>>(std::vector<Message> &vec);
 };
 
-#endif // CLIENT_HPP
+#endif  // CLIENT_HPP
