@@ -57,16 +57,16 @@ void Server::run() {
     else if (event > 0) {
       std::set<Client *>::iterator it = _clients.begin();
 
-      while (it != _clients.end()) {
+      for (; it != _clients.end();) {
         try {
           if (FD_ISSET((*it)->get_fd(), &_read_fds))  // read event
           {
             read_client(*it);
             write_client(*it);
           }
-          it++;
-        } catch (SocketStream::SystemCallException &e) {
-          // 소켓 시스템 콜 예외 - 복구 불가능
+          ++it;
+        } catch (std::runtime_error &e) {
+          // 각종 시스템 콜 예외 - 복구 불가능
           std::cerr << "Error: " << e.what() << std::endl;
           FD_CLR((*it)->get_fd(), &_master_fds);
           delete *it;
@@ -86,8 +86,8 @@ void Server::run() {
       try {
         if (FD_ISSET(_server_fd, &_read_fds))  // accept event
           accept_new_client();
-      } catch (SocketStream::SystemCallException &e) {
-        // 소켓 시스템 콜 예외 - 복구 불가능
+      } catch (std::runtime_error &e) {
+        // 시스템 콜 예외 - 복구 불가능
         std::cerr << "Error: " << e.what() << std::endl;
       } catch (...) {
         // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
@@ -104,48 +104,49 @@ void Server::accept_new_client() {
   _clients.insert(client);  // 새로운 클라이언트를 _clients에 추가
 }
 
-// 클라이언트로부터 데이터를 읽어들이는 함수 - 수정중
+// 클라이언트로부터 데이터를 읽어들이는 함수
 void Server::read_client(Client *client) {
   // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
   client->recv();
 
   // 클라이언트의 버퍼로부터 데이터를 읽어들임
   // 개행 단위로 처리를 위해 컨테이너로 반환하도록 구현 필요
-  std::vector<Message> messages;
 
-  *client >> messages;
+  std::string line;
 
-  // 대충 메시지 생성자 사용하고, 이를 채널에 전달하는 함수 호출
+  while (true) {
+    try {
+      *client >> line;
 
-  std::vector<Message>::const_iterator it = messages.begin();
-  for (; it != messages.end(); it++) {
-    switch (it->get_command()) {
-      case Message::CAP:
-        // capability(client, it->get_params());
+      if (line.length() == 0)
         break;
-      case Message::PASS:
-        // confirm_password(client, it->get_params()[0]);
-        break;
-      case Message::NICK:
-        // set_nickname(client, it->get_params()[0]);
-        break;
-      case Message::USER:
-        // set_userinfo(client, it->get_params()[0], it->get_params()[1],
-        // it->get_params()[2], it->get_params()[3]);
-        break;
-      case Message::JOIN:
-        join_channel(client, it->get_params()[0]);
-        break;
-      default:
-        break;
+      else if (line.length() == 2)
+        continue;
+      Message msg(line);
+      switch (msg.get_command()) {
+        case Message::CAP:
+          // capability(client, msg.get_params());
+          break;
+        case Message::PASS:
+          // confirm_password(client, it->get_params()[0]);
+          break;
+        case Message::NICK:
+          // set_nickname(client, it->get_params()[0]);
+          break;
+        case Message::USER:
+          // set_userinfo(client, it->get_params()[0], it->get_params()[1],
+          // it->get_params()[2], it->get_params()[3]);
+          break;
+        case Message::JOIN:
+          join_channel(client, msg.get_params()[0]);
+          break;
+        default:
+          *client << ERR_UNKNOWNCAPCMD_421(*client, msg.get_params()[0]);
+          break;
+      }
+    } catch (SocketStream::MessageTooLongException &e) {
+      *client << ERR_INPUTTOOLONG_417(*client);
     }
-    std::cout << "command: " << it->get_command() << std::endl;
-    std::vector<std::string>::const_iterator it2 = it->get_params().begin();
-    std::cout << "params: " << it->get_params().size() << ": ";
-    for (; it2 != it->get_params().end(); it2++) {
-      std::cout << *it2 << " ";
-    }
-    std::cout << std::endl;
   }
 }
 
