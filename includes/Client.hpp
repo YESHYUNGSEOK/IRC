@@ -8,6 +8,7 @@
 #include "NumericReply.hpp"
 #include "SocketStream.hpp"
 #include "ft_irc.hpp"
+#include "Channel.hpp"
 
 class SocketStream;
 
@@ -32,21 +33,23 @@ class SocketStream;
 #define UNSET_USER_SET(client) ((client)._status &= ~0x10)
 #define UNSET_REGISTERED(client) ((client)._status &= ~0x20)
 
-class Client {
- private:
+class Client
+{
+private:
   std::string _nickname;
   std::string _username;
   std::string _hostname;
   std::string _servername;
   std::string _realname;
   SocketStream &_stream;
+  std::vector<Channel *> _channels;
 
   Client();                              // 사용하지 않는 생성자
   Client(const Client &src);             // 사용하지 않는 생성자
   Client &operator=(const Client &src);  // 사용하지 않는 연산자
 
- public:
-  unsigned int _status;  // 수동으로 조작 금지
+public:
+  unsigned int _status; // 수동으로 조작 금지
   Client(int server_fd);
   ~Client();
 
@@ -78,6 +81,10 @@ class Client {
   void set_servername(const std::string &servername);
   void set_realname(const std::string &realname);
 
+  std::vector<Channel *> &get_channels();
+  void join_channel(Channel *channel);
+  void part_channel(Channel *channel);
+
   // 연산자 오버로딩
   bool operator==(const Client &other);
   bool operator!=(const Client &other);
@@ -90,4 +97,4 @@ class Client {
   Client &operator>>(std::vector<Message> &vec);
 };
 
-#endif  // CLIENT_HPP
+#endif // CLIENT_HPP
