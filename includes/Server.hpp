@@ -1,5 +1,4 @@
 #pragma once
-#include "Channel.hpp"
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
