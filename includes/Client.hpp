@@ -58,16 +58,6 @@ class Client {
   void recv();
   void send();
 
-  // 커맨드 처리
-  void set_register();
-  void set_userinfo(const std::string &username, const std::string &hostname,
-                    const std::string &servername, const std::string &realname);
-  Message get_msg();
-  void start_negotiation();
-  void finish_negotiation();
-  void confirm_password();
-  void register_client();
-
   // getter, setter
   const std::string &get_nickname() const;
   const std::string &get_username() const;

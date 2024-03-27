@@ -5,33 +5,61 @@
 #include <string>
 
 #include "Server.hpp"
+#include "ft_irc.hpp"
 
 class Server;
 
 #define SERVER_PREFIX (":localhost")
+#define AVAIL_USRMOD ("itkol")
+#define AVAIL_CHANMOD ("itkol")
 
 #define CLIENT_SOURCE(client)                                      \
   ((client).get_nickname() + "!" + (client).get_username() + "@" + \
    (client).get_hostname())
 
-#define RPL_WELCOME(client)                                                \
+// define RPL_REPLIES
+#define RPL_WELCOME_001(client)                                            \
   ("001 " + (client).get_nickname() + " :Welcome to the FT_IRC Network " + \
    CLIENT_SOURCE((client)) + "\r\n")
+#define RPL_YOURHOST_002(client)                                   \
+  ("002 " + (client).get_nickname() + " :Your host is localhost" + \
+   ", running FT_IRC/1.0\r\n")
+#define RPL_CREATED_003(client, created_at)                          \
+  ("003 " + (client).get_nickname() + " :This server was created " + \
+   (created_at) + "\r\n")
+#define RPL_MYINFO_004(client)                                            \
+  ("004 " + (client).get_nickname() + " :localhost 1.0 " + AVAIL_USRMOD + \
+   " " + AVAIL_CHANMOD + "\r\n")
 
-#define RPL_CAP_LS(client) ((client) << "CAP * LS :\r\n")
-#define RPL_CAP_LIST(client) ((client) << "CAP * LIST :\r\n")
+// define CAP_REPLIES
+#define RPL_CAP_LS(client) ("CAP " + (client).get_nickname() + " LS :\r\n")
+#define RPL_CAP_LIST(client) ("CAP " + (client).get_nickname() + " LIST :\r\n")
 #define RPL_CAP_NAK(client, params) \
-  ((client) << "CAP * NAK :" << params << "\r\n")
+  ("CAP " + (client).get_nickname() + " NAK :" + params + "\r\n")
 
-#define ERR_INVALIDCAPCMD(client, command)                           \
-  ((client) << "410 " << (client).get_nickname() << " " << (command) \
-            << ":Invalid CAP command\r\n")
-
+// define ERR_REPLIES
+#define ERR_INVALIDCAPCMD_410(client, command)          \
+  ("410 " + (client).get_nickname() + " " + (command) + \
+   ":Invalid CAP command\r\n")
 #define ERR_INPUTTOOLONG_417(client) \
   ("417 " + (client).get_nickname() + " :Input line was too long\r\n")
-#define ERR_UNKNOWNCAPCMD_421(client, command)                       \
-  (std::string("421 ") + (client).get_nickname() + " " + (command) + \
+#define ERR_UNKNOWNCOMMAND_421(client, command)           \
+  (("421 ") + (client).get_nickname() + " " + (command) + \
    " :Unknown command\r\n")
+#define ERR_NONICKNAMEGIVEN_431(client) \
+  ("431 " + (client).get_nickname() + " :No nickname given\r\n")
+#define ERR_ERRONEUSNICKNAME_432(client, nickname)       \
+  ("432 " + (client).get_nickname() + " " + (nickname) + \
+   " :Erroneous nickname\r\n")
+#define ERR_NICKNAMEINUSE_433(client, nickname)          \
+  ("433 " + (client).get_nickname() + " " + (nickname) + \
+   " :Nickname is already in use\r\n")
+#define ERR_NOTREGISTERED_451(client) \
+  ("451 " + (client).get_nickname() + " :You have not registered\r\n")
+#define ERR_NEEDMOREPARAMS_461(client) \
+  ("461 " + (client).get_nickname() + " :Not enough parameters\r\n")
+#define ERR_ALREADYREGISTRED_462(client) \
+  ("462 " + (client).get_nickname() + " :You may not reregister\r\n")
 
 typedef enum NUMERIC {
   // ERR
