@@ -1,38 +1,29 @@
 #include "SocketStream.hpp"
 
-SocketStream::SocketStream()  // 사용하지 않는 생성자
+// 사용하지 않는 생성자
+SocketStream::SocketStream()
     : _addr(),
       _addr_len(0),
       _fd(0),
       _read_buffer(""),
       _write_buffer(""),
-      _raw_buffer(new char[BUFFER_SIZE]) {
-  std::cout << "[SocketStream] default constructer called - need to fix"
-            << std::endl;
+      _raw_buffer(NULL) {
+  DEBUG_PRINT("SocketStream::SocketStream()");
 }
 
-SocketStream::SocketStream(const SocketStream &src)  // 사용하지 않는 생성자
-    : _addr(src._addr),
-      _addr_len(src._addr_len),
-      _fd(src._fd),
-      _read_buffer(src._read_buffer),
-      _write_buffer(src._write_buffer) {
-  std::cout << "[SocketStream] copy constructer called - need to fix"
-            << std::endl;
+// 사용하지 않는 생성자
+SocketStream::SocketStream(__unused const SocketStream &src)
+    : _addr(),
+      _addr_len(0),
+      _fd(0),
+      _read_buffer(""),
+      _write_buffer(""),
+      _raw_buffer(NULL) {
+  DEBUG_PRINT("SocketStream::SocketStream(const SocketStream &src)");
 }
 
-SocketStream &SocketStream::operator=(
-    const SocketStream &src)  // 사용하지 않는 연산자
-{
-  std::cout << "[SocketStream] assign operater called - need to fix"
-            << std::endl;
-  if (this != &src) {
-    const_cast<int &>(this->_fd) = src._fd;
-    const_cast<struct sockaddr_in &>(this->_addr) = src._addr;
-    const_cast<socklen_t &>(this->_addr_len) = src._addr_len;
-    this->_read_buffer = src._read_buffer;
-    this->_write_buffer = src._write_buffer;
-  }
+// 사용하지 않는 연산자 - 컨테이너를 사용하면 필요할 수 있음
+SocketStream &SocketStream::operator=(__unused const SocketStream &src) {
   return *this;
 }
 
@@ -47,39 +38,37 @@ SocketStream::SocketStream(const int server_fd)
       _read_buffer(),
       _write_buffer(),
       _raw_buffer(new char[BUFFER_SIZE]) {
-  std::cout << "[SocketStream] " << _fd << " connected" << std::endl;
-
-  if (_fd < 0)  // 소켓 연결에 실패했을 때
+  if (_fd < 0)  // 소켓 연결 실패
   {
     delete[] _raw_buffer;
-    throw SystemCallException();
+    throw std::runtime_error("SocketStream::SocketStream() accept() failed");
   }
 
   unsigned int opt = 1;
   if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
-      0) {  // 소켓 옵션 설정 - 재사용 허용
+      0) {  // 소켓 재사용 허용
     close(_fd);
     delete[] _raw_buffer;
-    throw SystemCallException();
+    throw std::runtime_error(
+        "SocketStream::SocketStream() setsockopt() failed");
   }
 
 #ifdef __APPLE__                            // macOS
-  if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)  // 소켓을 논블로킹으로 설정
+  if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)  // 소켓 논블로킹 설정
   {
     close(_fd);
     delete[] _raw_buffer;
-    throw SystemCallException();
+    throw std::runtime_error("SocketStream::SocketStream() fcntl() failed");
   }
 #endif
+  DEBUG_PRINT(_fd);
 }
 
 SocketStream::~SocketStream() {
-  delete[] _raw_buffer;
   close(_fd);
+  delete[] _raw_buffer;
   std::cout << "[SocketStream] " << _fd << " disconnected" << std::endl;
 }
-
-int SocketStream::get_fd() const { return _fd; }
 
 void SocketStream::recv() {
 #ifdef __linux__  // Linux
@@ -90,7 +79,7 @@ void SocketStream::recv() {
 #endif
 
   if (recv_len <= 0) {  // 0일 경우 처리 결정 필요
-    if (recv_len == 0) std::cerr << "recv_len == 0" << std::endl;
+    if (recv_len == 0) DEBUG_PRINT(recv_len);
     if ((errno == EAGAIN || errno == EWOULDBLOCK))
       return;
     else
@@ -99,7 +88,6 @@ void SocketStream::recv() {
 
   _read_buffer += std::string(_raw_buffer, recv_len);
 }
-
 void SocketStream::send() {
   if (_write_buffer.empty()) return;
 #ifdef __linux__  // Linux
@@ -111,62 +99,38 @@ void SocketStream::send() {
 #endif
 
   if (send_len <= 0) {  // 0일 경우 처리 결정 필요
-    if (send_len == 0) std::cerr << "send_len == 0" << std::endl;
+    if (send_len == 0) DEBUG_PRINT(send_len);
     if ((errno == EAGAIN || errno == EWOULDBLOCK))
       return;
     else
       throw ConnectionClosedException();
   }
 
-  std::cout << "[SocketStream] " << _fd
-            << " sent: " << _write_buffer.substr(0, send_len) << std::endl;
-
   _write_buffer = _write_buffer.substr(send_len);
 }
+
+int SocketStream::get_fd() const { return _fd; }
 
 SocketStream &SocketStream::operator<<(const std::string &data) {
   _write_buffer += data;
 
   return *this;
 }
-
 SocketStream &SocketStream::operator>>(std::string &data) {
-  const size_t pos = _read_buffer.find("\r\n");
+  const std::string::size_type pos = _read_buffer.find("\r\n");
   if (pos == std::string::npos) {
-    throw NoNewlineException();
+    data = "";  // CRLF가 없으면 빈 문자열 반환
   } else if (pos + 2 > LINE_SIZE_MAX) {
+    // CRLF가 있지만 메시지가 너무 길면 무시하고 예외 발생
     _read_buffer = _read_buffer.substr(pos + 2);
     throw MessageTooLongException();
   } else {
+    // CRLF가 있고 메시지가 적절하면 반환하고 버퍼에서 삭제
     data = _read_buffer.substr(0, pos + 2);
     _read_buffer = _read_buffer.substr(pos + 2);
   }
 
   return *this;
-}
-
-SocketStream &SocketStream::operator>>(std::vector<std::string> &data) {
-  std::string msg;
-
-  *this >> msg;
-  while (!msg.empty()) {
-    if (msg.length() <= LINE_SIZE_MAX) data.push_back(msg);
-    *this >> msg;
-  }
-
-  return *this;
-}
-
-SocketStream::SystemCallException::SystemCallException() {}
-SocketStream::SystemCallException::SystemCallException(
-    __unused const SystemCallException &src) {}
-SocketStream::SystemCallException &SocketStream::SystemCallException::operator=(
-    __unused const SystemCallException &src) {
-  return *this;
-}
-SocketStream::SystemCallException::~SystemCallException() throw() {}
-const char *SocketStream::SystemCallException::what() const throw() {
-  return "System call failed";
 }
 
 SocketStream::ConnectionClosedException::ConnectionClosedException() {}
@@ -180,18 +144,6 @@ SocketStream::ConnectionClosedException::operator=(
 SocketStream::ConnectionClosedException::~ConnectionClosedException() throw() {}
 const char *SocketStream::ConnectionClosedException::what() const throw() {
   return "Connection closed";
-}
-
-SocketStream::NoNewlineException::NoNewlineException() {}
-SocketStream::NoNewlineException::NoNewlineException(
-    __unused const NoNewlineException &src) {}
-SocketStream::NoNewlineException &SocketStream::NoNewlineException::operator=(
-    __unused const NoNewlineException &src) {
-  return *this;
-}
-SocketStream::NoNewlineException::~NoNewlineException() throw() {}
-const char *SocketStream::NoNewlineException::what() const throw() {
-  return "IRC protocol violation: no crlf";
 }
 
 SocketStream::MessageTooLongException::MessageTooLongException() {}
