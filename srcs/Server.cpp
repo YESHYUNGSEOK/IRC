@@ -198,10 +198,21 @@ bool Server::check_channel_name(
 	{
 		// if (it->size() > 50)
 		// 	return false;
-		if ((*it).size() < 2 || ((*it)[0] != '#' && (*it)[0] != '&'))
+		if ((*it).size() < 2 || (!(*it).rfind('#') && !(*it).rfind('&')))
 			return false;
 	}
 	return true;
+}
+
+Channel *Server::get_target_channel(const std::string &channel_name) const
+{
+	for (std::set<Channel *>::iterator it = _channels.begin();
+		 it != _channels.end(); it++)
+	{
+		if ((*it)->get_name() == channel_name)
+			return *it;
+	}
+	return 0;
 }
 
 void Server::join_channel(Client *client, std::string msg)
@@ -209,70 +220,69 @@ void Server::join_channel(Client *client, std::string msg)
 	(void)client;
 	std::vector<std::string> tokens = split_tokens(msg, ' ');
 
-	if (tokens.size() == 1)
+	if (tokens.size() != 2 && tokens.size() != 3)
 	{
 		// *client << ERR_NEEDMOREPARAMS;
 		return;
 	}
-	if (tokens.size() == 2 || tokens.size() == 3)
+	std::vector<std::string> channel_tokens = split_tokens(tokens[1], ',');
+	std::vector<std::string> key_tokens;	  // only if key is provided
+	std::vector<std::string>::iterator keyIt; // only if key is provided
+	if (tokens.size() == 3)
 	{
-		std::vector<std::string> channel_tokens = split_tokens(tokens[1], ',');
-		std::vector<std::string> key_tokens;
-		std::vector<std::string>::iterator keyIt;
-		// 임시 주석처리 if vector size is more than the limit ERR_TOOMANYCHANNELS
-		// 따로 참여할 수 있는 최대 채널 수를 정해야 할 듯
-		if (tokens.size() == 3)
+		key_tokens = split_tokens(tokens[2], ',');
+		keyIt = key_tokens.begin();
+	}
+	if (check_channel_name(channel_tokens) == false) // invalid channel name
+	{
+		//   *client << ERR_NOSUCHCHANNEL;
+		return;
+	}
+	Channel *channel = 0;
+	for (std::vector<std::string>::iterator it = channel_tokens.begin(); it != channel_tokens.end(); it++)
+	{
+		Channel *targetChnl = get_target_channel(*it);
+		if (!targetChnl) // channel does not exist
 		{
-			key_tokens = split_tokens(tokens[2], ',');
-			keyIt = key_tokens.begin();
-		}
-		if (check_channel_name(channel_tokens) == false)
-		{
-			//   *client << ERR_NOSUCHCHANNEL;
+			std::string key = "";
+			if (key_tokens.empty() == false && keyIt != key_tokens.end())
+			{
+				key = *keyIt;
+				keyIt++;
+			}
+			Channel *new_channel = new Channel(*it, key, false, client);
+			_channels.insert(new_channel);
 			return;
 		}
-		std::vector<std::string>::iterator it = channel_tokens.begin();
-		for (; it != channel_tokens.end(); it++)
+		// target channel exists
+		if ((*it) == targetChnl->get_name())
 		{
-			// double loop: 개선 필요
-			for (std::set<Channel *>::iterator chnIt = _channels.begin();
-				 chnIt != _channels.end(); chnIt++)
+			if (targetChnl->get_mode(INVITE_ONLY) == true) // invite only
 			{
-				if ((*it) == (*chnIt)->get_name())
-				{
-					if ((*chnIt)->get_mode(INVITE_ONLY) == true)
-					{
-						// *client << ERR_INVITEONLYCHAN;
-						return;
-					}
-					if ((*chnIt)->is_channel_full() == true)
-					{
-						// *client << ERR_CHANNELISFULL;
-						return;
-					}
-					if (tokens.size() == 3 &&
-						keyIt != key_tokens.end() && (*chnIt)->get_key() != (*keyIt))
-					{
-						// *client << ERR_BADCHANNELKEY;
-						return;
-					}
-					else if (tokens.size() == 2)
-					{
-						(*chnIt)->add_client(client);
-						return;
-					}
-				}
+				// *client << ERR_INVITEONLYCHAN;
+				return;
 			}
-			if (_channels.empty() == true)
+			if (targetChnl->is_channel_full() == true) // channel is full
 			{
-				std::string key = "";
-				if (keyIt != key_tokens.end())
-				{
-					key = *keyIt;
-					keyIt++;
-				}
-				Channel *new_channel = new Channel(*it, key, false, client);
-				_channels.insert(new_channel);
+				// *client << ERR_CHANNELISFULL;
+				return;
+			}
+			// no key
+			if (key_tokens.empty() == true)
+			{
+				targetChnl->add_client(client);
+				return;
+			}
+			// key exists
+			if (keyIt != key_tokens.end() && targetChnl->get_key() != (*keyIt))
+			{
+				// *client << ERR_BADCHANNELKEY;
+				return;
+			}
+			else if (keyIt != key_tokens.end() && targetChnl->get_key() == (*keyIt))
+			{
+				targetChnl->add_client(client);
+				keyIt++;
 				return;
 			}
 		}
