@@ -87,6 +87,7 @@ void SocketStream::recv() {
   }
 
   _read_buffer += std::string(_raw_buffer, recv_len);
+  DEBUG_PRINT(_read_buffer);
 }
 void SocketStream::send() {
   if (_write_buffer.empty()) return;
@@ -105,7 +106,7 @@ void SocketStream::send() {
     else
       throw ConnectionClosedException();
   }
-
+  DEBUG_PRINT(_write_buffer);
   _write_buffer = _write_buffer.substr(send_len);
 }
 
