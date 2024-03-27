@@ -18,15 +18,23 @@
 #include "Server.hpp"
 #include "ft_irc.hpp"
 
-int main(int argc, char **argv) {
-  (void)argc;
+int main(int argc, char **argv)
+{
+	(void)argc;
+	if (argc != 3)
+	{
+		std::cerr << "Usage: " << argv[0] << " <port> <password>" << std::endl;
+		return 1;
+	}
+	try
+	{
+		Server server(atoi(argv[1]), std::string(argv[2]));
+		server.run();
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << "Error: " << e.what() << std::endl;
+	}
 
-  try {
-    Server server(atoi(argv[1]), std::string(argv[2]));
-    server.run();
-  } catch (std::exception &e) {
-    std::cerr << "Error: " << e.what() << std::endl;
-  }
-
-  return 0;
+	return 0;
 }

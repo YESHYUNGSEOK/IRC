@@ -20,54 +20,56 @@
 class Client;
 class Channel;
 
-class Server {
- private:
-  int _port;
-  std::string _password;
-  int _server_fd;
-  fd_set _master_fds;
-  fd_set _read_fds;
-  struct sockaddr_in _addr;
+class Server
+{
+private:
+	int _port;
+	std::string _password;
+	int _server_fd;
+	fd_set _master_fds;
+	fd_set _read_fds;
+	struct sockaddr_in _addr;
 
-  std::set<Client *> _clients;
-  std::set<Channel *> _channels;
+	std::set<Client *> _clients;
+	std::set<Channel *> _channels;
 
-  Server();
-  Server(const Server &src);
-  Server &operator=(const Server &src);
+	Server();
+	Server(const Server &src);
+	Server &operator=(const Server &src);
 
-  // private utils
-  std::vector<std::string> split_tokens(const std::string &msg,
-                                        const char delim);
-  bool check_channel_name(const std::vector<std::string> &channel_tokens) const;
+	// private utils
+	std::vector<std::string> split_tokens(const std::string &msg,
+										  const char delim);
+	bool check_channel_name(const std::vector<std::string> &channel_tokens) const;
+	Channel *get_target_channel(const std::string &channel_name) const;
 
- public:
-  Server(int port, std::string password);
-  ~Server();
+public:
+	Server(int port, std::string password);
+	~Server();
 
-  void run();
+	void run();
 
-  void accept_new_client();
-  void read_client(Client *client);
-  void write_client(Client *client);
+	void accept_new_client();
+	void read_client(Client *client);
+	void write_client(Client *client);
 
-  // CAP 명령어 처리
-  // void capability(Client *client, std::stringstream &cap_params);
+	// CAP 명령어 처리
+	// void capability(Client *client, std::stringstream &cap_params);
 
-  // PASS 명령어 처리
-  // void confirm_password(Client *client, const std::string &password);
+	// PASS 명령어 처리
+	// void confirm_password(Client *client, const std::string &password);
 
-  // PASS 명령어 처리
-  // void register_client(Client *client, std::string msg);
+	// PASS 명령어 처리
+	// void register_client(Client *client, std::string msg);
 
-  // NICK 명령어 처리
-  // void set_nickname(Client *client, std::string msg);
+	// NICK 명령어 처리
+	// void set_nickname(Client *client, std::string msg);
 
-  // USER 명령어 처리
-  // void set_userinfo(Client *client, std::string msg);
+	// USER 명령어 처리
+	// void set_userinfo(Client *client, std::string msg);
 
-  // JOIN 명령어 처리
-  void join_channel(Client *client, std::string msg);
+	// JOIN 명령어 처리
+	void join_channel(Client *client, std::string msg);
 };
 
 #endif

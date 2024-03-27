@@ -21,6 +21,10 @@ std::string Channel::get_key() const { return _key; }
 
 std::string Channel::get_topic() const { return _topic; }
 
+bool Channel::get_mode(enum modeType mode) const { return _mode[mode]; }
+
+bool Channel::is_channel_full() const { return _clients.size() >= static_cast<size_t>(_max_clients); }
+
 int Channel::get_max_clients() const { return _max_clients; }
 
 void Channel::set_key(const std::string &key) { _key = key; }
