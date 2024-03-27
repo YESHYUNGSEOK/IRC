@@ -11,17 +11,13 @@ class Client;
 
 enum modeType
 {
-	SCOPE, // private must have key
-	INVITE_ONLY,
-	TOPIC_RESTRICTED
+  SCOPE, // private must have key
+  INVITE_ONLY,
+  TOPIC_RESTRICTED
 };
 
 class Channel
 {
-public: // constructor and destructor
-	Channel(std::string name, std::string key, bool scope, Client *host);
-	~Channel();
-
 public: // public getters && setters
 	std::string get_name() const;
 	std::string get_key() const;
@@ -29,6 +25,15 @@ public: // public getters && setters
 	int get_max_clients() const;
 	bool get_mode(enum modeType mode) const;
 	bool is_channel_full() const;
+  
+  Channel(std::string name, std::string key, bool scope, Client *host);
+  ~Channel();
+
+public: // public getters && setters
+  std::string get_name() const;
+  std::string get_key() const;
+  std::string get_topic() const;
+  int get_max_clients() const;
 
 	void set_key(const std::string &key);
 	void set_topic(const std::string &topic);
@@ -39,11 +44,14 @@ public: // public methods
 	void add_client(Client *client);
 	void remove_client(Client *client);
 	bool is_client_in_channel(Client *client) const;
+  bool is_client_in_channel(std::string nickname) const;
+  std::set<Client *> &get_clients();
 
 	// manage operator
 	void add_operator(Client *client);
 	void remove_operator(Client *client);
 	bool is_operator(Client *client) const;
+  std::set<Client *> &get_operators();
 
 	// manage client invitation
 	void invite_client(Client *client);
@@ -51,6 +59,7 @@ public: // public methods
 
 	// set channel mode
 	void set_channel_mode(enum modeType mode, bool value);
+  bool get_channel_mode(enum modeType mode) const;
 
 private: // private members
 	std::string _name;

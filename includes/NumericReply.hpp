@@ -8,16 +8,6 @@
 
 class Server;
 
-#define RPL_WELCOME_STR ("001 RPL_WELCOME")
-
-#define ERR_NOTREGISTERED_STR ("451 ERR_NOTREGISTERED")
-#define ERR_NEEDMOREPARAMS_STR ("461 Need more parameters")
-#define ERR_ALREADYREGISTRED_STR ("462 ERR_ALREADYREGISTRED")
-#define ERR_PASSWDMISMATCH_STR ("464 ERR_PASSWDMISMATCH") // not in use: according to RFC 1459
-
-#define ERR_MSGTOOLONG 999
-#define ERR_MSGTOOLONG_STR ("999 ERR_MSGTOOLONG")
-
 #define SERVER_PREFIX (":localhost")
 
 #define CLIENT_SOURCE(client)                                      \
@@ -33,9 +23,15 @@ class Server;
 #define RPL_CAP_NAK(client, params) \
   ((client) << "CAP * NAK :" << params << "\r\n")
 
-#define ERR_INVALIDCAPCMD(client, command)                       \
-  ((client) << "410 " << client.get_nickname() << " " << command \
+#define ERR_INVALIDCAPCMD(client, command)                           \
+  ((client) << "410 " << (client).get_nickname() << " " << (command) \
             << ":Invalid CAP command\r\n")
+
+#define ERR_INPUTTOOLONG_417(client) \
+  ("417 " + (client).get_nickname() + " :Input line was too long\r\n")
+#define ERR_UNKNOWNCAPCMD_421(client, command)                       \
+  (std::string("421 ") + (client).get_nickname() + " " + (command) + \
+   " :Unknown command\r\n")
 
 typedef enum NUMERIC {
   // ERR

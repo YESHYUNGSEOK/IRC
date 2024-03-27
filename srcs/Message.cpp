@@ -1,50 +1,54 @@
 #include "Message.hpp"
 
+const std::string Message::_command_arr[22] = {
+    "NONE", "CAP",   "PASS",   "NICK",  "USER", "OPER",   "QUIT", "JOIN",
+    "PART", "TOPIC", "MODE",   "NAMES", "LIST", "INVITE", "KICK", "PRIVMSG",
+    "WHO",  "WHOIS", "WHOWAS", "KILL",  "PING", "PONG"};
+
 Message::Message(std::string &line)
     : _command(NONE), _params(std::vector<std::string>()) {
-  std::string::size_type cmd_size = line.find(" ");
-  if (cmd_size == std::string::npos) return;
+  const std::string::size_type clrf_pos = line.length() - 2;
+  std::string::size_type pos = 0;
+  std::string cmd;
 
-  std::string cmd = line.substr(0, cmd_size);
-  for (std::string::size_type i = 0; i < cmd.size(); i++) {
-    if (!isalpha(cmd[i])) return;
-    if (cmd[i] >= 'a' && cmd[i] <= 'z') cmd[i] = toupper(cmd[i]);
+  // 커맨드 추출 - 알파벳, 숫자로 이루어진 문자열만 추출
+  for (; pos < line.size(); pos++) {
+    if (!isalnum(line[pos])) break;
+    cmd += toupper(line[pos]);
   }
-  const std::string cmd_arr[21] = {
-      "PASS",  "NICK",  "USER",   "OPER", "QUIT",   "JOIN", "PART",
-      "TOPIC", "MODE",  "NAMES",  "LIST", "INVITE", "KICK", "PRIVMSG",
-      "WHO",   "WHOIS", "WHOWAS", "KILL", "PING",   "PONG", "CAP"};
-  for (int i = 0; i < 21; i++) {
-    if (cmd == cmd_arr[i]) {
+  pos = cmd.size();
+
+  // 커맨드 종류 판별
+  for (int i = 1; i < 22; i++) {
+    if (cmd == _command_arr[i]) {
       _command = static_cast<e_cmd>(i);
       break;
     }
   }
-  if (_command == NONE) return;
 
-  line = line.substr(line.find_first_not_of(" ", cmd_size));
-
-  std::string *colon_param = NULL;
-  std::string::size_type colon_pos = line.find(":");
-  if (colon_pos != std::string::npos) {
-    colon_param = new std::string(line.substr(colon_pos + 1, line.size()));
-    line = line.substr(0, colon_pos);
+  // 커맨드가 잘못됐거나, 뒤에 공백이 아닌 문자가 있을 경우
+  if (_command == NONE || (pos != clrf_pos && line[pos] != ' ')) {
+    _params.push_back(cmd);
+    return;
   }
 
-  while (line.length()) {
-    std::string::size_type space_pos = line.find(" ");
-    if (space_pos == std::string::npos) {
-      _params.push_back(line.substr(0, line.size()));
+  while (pos != clrf_pos) {
+    pos = line.find_first_not_of(" ", pos);
+    if (pos == clrf_pos) break;
+
+    std::string::size_type param_end = line.find_first_of("\r\n ", pos);
+    if (line[pos] == ':') {
+      std::string::size_type param_end = line.find_first_of("\r\n", pos);
+      if (param_end != clrf_pos) {
+        _command = NONE;
+        return;
+      }
+      _params.push_back(line.substr(pos + 1, param_end - pos - 1));
       break;
     }
-    _params.push_back(line.substr(0, space_pos));
-    line = line.substr(line.find_first_not_of(" ", space_pos));
+    _params.push_back(line.substr(pos, param_end - pos));
+    pos = param_end;
   }
-  if (colon_param) {
-    _params.push_back(*colon_param);
-    delete colon_param;
-  }
-  *_params.rbegin() = _params.rbegin()->substr(0, _params.rbegin()->size() - 2);
 }
 
 Message::Message(const Message &src)
