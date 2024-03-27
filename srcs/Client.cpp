@@ -1,34 +1,14 @@
 #include "Client.hpp"
 
 Client::Client(int server_fd)
-    : _stream(*new SocketStream(server_fd)), _status(0)
-{
-  std::cout << "[Client] " << _stream.get_fd() << " connected" << std::endl;
+    : _stream(*new SocketStream(server_fd)), _status(0) {
+  DEBUG();
 }
-Client::~Client()
-{
-  std::cout << "[Client] " << _stream.get_fd() << " disconnected" << std::endl;
+Client::~Client() {
   delete &_stream;
+  DEBUG();
 }
 
-void Client::set_userinfo(const std::string &username,
-                          const std::string &hostname,
-                          const std::string &servername,
-                          const std::string &realname)
-{
-  _username = username;
-  _hostname = hostname;
-  _servername = servername;
-  _realname = realname;
-}
-
-std::string Client::read_buffer()
-{
-  std::string msg;
-  _stream >> msg;
-
-  return msg;
-}
 void Client::recv() { _stream.recv(); }
 void Client::send() { _stream.send(); }
 
@@ -63,21 +43,7 @@ void Client::confirm_password()
   SET_PASS_CONFIRMED(*this);
   register_client();
 }
-void Client::set_user(const std::string &username,
-                      __unused const std::string &hostname,
-                      __unused const std::string &servername,
-                      const std::string &realname)
-{
-  if ((!IS_PASS_CONFIRMED(*this)))
-    return;
-  _username = username;
-  _realname = realname;
-  SET_USER_SET(*this);
-  std::cout << "[Client] " << _stream.get_fd() << " set user" << std::endl;
-  register_client();
-}
-void Client::register_client()
-{
+void Client::register_client() {
   if (IS_REGISTERED(*this) || (!IS_PASS_CONFIRMED(*this)) ||
       (!IS_NICK_SET(*this)) || (!IS_USER_SET(*this)) ||
       IS_IN_NEGOTIATION(*this))
@@ -89,8 +55,6 @@ void Client::register_client()
   _stream << RPL_WELCOME(*this);
 }
 
-unsigned int Client::get_status() const { return _status; }
-bool Client::is_registered() const { return IS_REGISTERED(*this); }
 const std::string &Client::get_nickname() const { return _nickname; }
 const std::string &Client::get_username() const { return _username; }
 const std::string &Client::get_realname() const { return _realname; }
@@ -158,15 +122,10 @@ Client &Client::operator>>(std::vector<Message> &vec)
       std::string msg;
 
       _stream >> msg;
+      if (msg.length() == 0) break;
       Message m(msg);
       vec.push_back(m);
-    }
-    catch (SocketStream::NoNewlineException &e)
-    {
-      break;
-    }
-    catch (SocketStream::MessageTooLongException &e)
-    {
+    } catch (SocketStream::MessageTooLongException &e) {
       // *this << ERR_MSGTOOLONG_STR;
     }
   }
@@ -174,26 +133,22 @@ Client &Client::operator>>(std::vector<Message> &vec)
   return *this;
 }
 
-Client::Client() // 사용하지 않는 생성자
-    : _stream(*new SocketStream(0)), _status(0)
-{
-  std::cout << "[Client] default constructer called - need to fix" << std::endl;
+Client::Client()  // 사용하지 않는 생성자
+    : _stream(*new SocketStream(0)), _status(0) {
+  DEBUG();
 }
 
 Client::Client(const Client &src) // 사용하지 않는 복사 생성자
     : _nickname(src._nickname),
       _stream(*new SocketStream(0)),
-      _status(src._status)
-{
-  std::cout << "[Client] copy constructer called - need to fix" << std::endl;
+      _status(src._status) {
+  DEBUG();
 }
 
-Client &Client::operator=(const Client &src) // 사용하지 않는 대입 연산자
+Client &Client::operator=(
+    __unused const Client &src)  // 사용하지 않는 대입 연산자
 {
-  std::cout << "[Client] assign operater called - need to fix" << std::endl;
-  _status = src._status;
-  _nickname = src._nickname;
-  // _stream = *new SocketStream(0);
+  DEBUG();
   return *this;
 }
 

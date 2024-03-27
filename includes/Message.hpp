@@ -2,6 +2,7 @@
 #define MESSAGE_HPP
 
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -11,31 +12,33 @@
 class Message {
  public:
   typedef enum CMD {
+    NONE,  // 0
+    CAP,
     PASS,
     NICK,
     USER,
-    OPER,  // 0-3
+    OPER,
     QUIT,
     JOIN,
     PART,
     TOPIC,
-    MODE,  // 4-8
+    MODE,
     NAMES,
     LIST,
     INVITE,
-    KICK,  // 9-12
+    KICK,
     PRIVMSG,
     WHO,
     WHOIS,
-    WHOWAS,  // 13-16
+    WHOWAS,
     KILL,
     PING,
-    PONG,  // 17-19
-    CAP,   // 20
-    NONE   // 21
+    PONG  // 21
   } e_cmd;
 
  private:
+  static const std::string _command_arr[22];
+
   e_cmd _command;
   std::vector<std::string> _params;
 
@@ -46,10 +49,6 @@ class Message {
   Message(const Message& src);
   Message& operator=(const Message& other);
   ~Message();
-
-  class InvalidCommandException : public std::exception {
-    virtual const char* what() const throw() { return "Invalid command"; }
-  };
 
   e_cmd get_command() const;
   const std::vector<std::string>& get_params() const;
