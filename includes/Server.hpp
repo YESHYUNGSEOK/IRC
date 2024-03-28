@@ -62,6 +62,9 @@ class Server {
   // JOIN 명령어 처리
   void join_channel(Client *client, std::string msg);
 
+  // MODE 명령어 처리: ongoing...
+  void MODE(Client *client, const std::vector<std::string> &params);
+
  public:
   Server(int port, std::string password);
   ~Server();
