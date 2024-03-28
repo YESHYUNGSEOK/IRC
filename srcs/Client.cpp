@@ -19,6 +19,17 @@ const std::string &Client::get_servername() const { return _servername; }
 const std::string &Client::get_realname() const { return _realname; }
 int Client::get_fd() const { return _stream.get_fd(); }
 
+const Channel * Client::is_channel_operator() const {
+  if (_channels.empty() == true) return 0;
+  std::vector<Channel *>::const_iterator it = _channels.rbegin();
+  for (std::set<Client *>::const_iterator opIt = (*it)->get_operators().begin();
+       opIt != (*it)->get_operators().end(); opIt++) {
+    if (*opIt == this) return *it;
+  }
+  return 0;
+}
+
+
 void Client::set_nickname(const std::string &nickname) { _nickname = nickname; }
 void Client::set_username(const std::string &username) { _username = username; }
 void Client::set_hostname(const std::string &hostname) { _hostname = hostname; }

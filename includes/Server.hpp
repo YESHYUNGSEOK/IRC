@@ -52,6 +52,7 @@ class Server {
   void register_client(Client *client);
   bool is_valid_nickname(const std::string &nickname);
   bool is_nick_in_use(const std::string &nickname);
+  int 
 
   // 명령어 처리
   void CAP(Client *client, const std::vector<std::string> &params);

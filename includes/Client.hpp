@@ -54,6 +54,8 @@ class Client {
   Client(int server_fd);
   ~Client();
 
+  const Channel *  is_channel_operator() const;
+
   // 소켓 입출력
   void recv();
   void send();
