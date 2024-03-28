@@ -52,6 +52,9 @@ class Message {
 
   e_cmd get_command() const;
   const std::vector<std::string>& get_params() const;
+
+  // 파라미터 검증
+  static bool is_valid_nick(const std::string& nick);
 };
 
 #endif

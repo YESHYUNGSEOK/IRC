@@ -64,3 +64,13 @@ Message::e_cmd Message::get_command() const { return this->_command; }
 const std::vector<std::string> &Message::get_params() const {
   return this->_params;
 }
+
+// gpt로 생성된 함수라 검증이 필요함
+bool Message::is_valid_nick(const std::string &nick) {
+  if (nick.size() > NICKNAME_MAX_LEN) return false;
+  for (std::string::const_iterator it = nick.begin(); it != nick.end(); it++) {
+    if (!isalnum(*it) && *it != '-' && *it != '[' && *it != ']' && *it != '\\')
+      return false;
+  }
+  return true;
+}

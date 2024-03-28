@@ -25,8 +25,8 @@ class Server {
  private:
   const int _port;
   const std::string _password;
-  const std::string _created_at;
-  int _server_fd;
+  std::string _created_at;
+  const int _server_fd;
   fd_set _master_fds;
   fd_set _read_fds;
   struct sockaddr_in _addr;
@@ -34,9 +34,10 @@ class Server {
   std::set<Client *> _clients;
   std::set<Channel *> _channels;
 
+  // 사용 X
   Server();
-  Server(const Server &src);
-  Server &operator=(const Server &src);
+  Server(__unused const Server &src);
+  Server &operator=(__unused const Server &src);
 
   // private utils
   std::vector<std::string> split_tokens(const std::string &msg,
@@ -50,7 +51,6 @@ class Server {
 
   // private command handlers
   void register_client(Client *client);
-  bool is_valid_nickname(const std::string &nickname);
   bool is_nick_in_use(const std::string &nickname);
 
   // 명령어 처리
