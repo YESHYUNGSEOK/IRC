@@ -443,7 +443,7 @@ int Server::is_valid_option(const std::string &option)
 	if (option.size() != 2 || option[0] != '+')
 		return -1;
 	if (option == "i")
-		return I0;
+		return 0;
 	else if (option == "t")
 		return 1;
 	else if (option == "k")
@@ -457,7 +457,7 @@ int Server::is_valid_option(const std::string &option)
 
 void Server::MODE(Client *client, const std::vector<std::string> &params)
 {
-	const Channel *targetChnl = client->is_channel_operator();
+	Channel *targetChnl = client->is_channel_operator();
 	if (!targetChnl)
 	{
 		// *client << ERR_CHANOPRIVSNEEDED_482(*client);
@@ -468,82 +468,75 @@ void Server::MODE(Client *client, const std::vector<std::string> &params)
 		*client << ERR_NEEDMOREPARAMS_461(*client);
 		return;
 	}
-	const enum opType[5] = { INVITE_ONLY, TOPIC_RESTRICTED, KEY, OPER, MAX_LIMIT };
-	enum opType op = static_cast<enum opType>is_valid_option(params[0]);
 	bool have_more_params = params.size() == 2;
-	switch (op)
+	switch (is_valid_option(params[0]))
 	{
-		case INVITE_ONLY:
+	case 0:
+	{
+		if (!have_more_params)
 		{
-			if (!have_more_params)
-			{
-				if (targetChnl->get_mode(INVITE_ONLY) == true)
-					targetChnl->set_channel_mode(INVITE_ONLY, false);
-				else
-					targetChnl->set_channel_mode(INVITE_ONLY, true);
-			}
-		}
-			break;
-		case TOPIC_RESTRICTED:
-		{
-			if (!have_more_params)
-			{
-				if (targetChnl->get_mode(TOPIC_RESTRICTED) == true)
-					targetChnl->set_channel_mode(TOPIC_RESTRICTED, false);
-				else
-					targetChnl->set_channel_mode(TOPIC_RESTRICTED, true);
-			}
-		}
-			break;
-		case KEY:
-		{
-			if (!have_more_params)
-				targetChnl->set_key(""); // remove key
+			if (targetChnl->get_mode(INVITE_ONLY) == true)
+				targetChnl->set_channel_mode(INVITE_ONLY, false);
 			else
-				targetChnl->set_key(params[1]);
+				targetChnl->set_channel_mode(INVITE_ONLY, true);
 		}
-			break;
-		case OPER:
+	}
+	break;
+	case 1:
+	{
+		if (!have_more_params)
 		{
-			if (have_more_params)
-			{
-				for (std::set<Client *>::iterator it = targetChnl->get_clients().begin();
-					 it != targetChnl->get_clients().end(); it++)
-				{
-					if ((*it)->get_nickname() == params[1])
-					{
-						targetChnl->add_operator(*it);
-						return;
-					}
-				}
-			}
+			if (targetChnl->get_mode(TOPIC_RESTRICTED) == true)
+				targetChnl->set_channel_mode(TOPIC_RESTRICTED, false);
+			else
+				targetChnl->set_channel_mode(TOPIC_RESTRICTED, true);
 		}
-			break;
-		case MAX_LIMIT:
+	}
+	break;
+	case 2:
+	{
+		if (!have_more_params)
+			targetChnl->set_key(""); // remove key
+		else
+			targetChnl->set_key(params[1]);
+	}
+	break;
+	case 3:
+	{
+		if (have_more_params)
 		{
-			if (have_more_params)
+			for (std::set<Client *>::iterator it = targetChnl->get_clients().begin();
+				 it != targetChnl->get_clients().end(); it++)
 			{
-				int max_users = std::atoi(params[1].c_str());
-				if (max_users <= 0)
+				if ((*it)->get_nickname() == params[1])
 				{
-					// *client << ERR_BADCHANMASK_476(*client);
+					targetChnl->add_operator(*it);
 					return;
 				}
-				targetChnl->set_max_clients(max_users);
 			}
-			else
-				targetChnl->set_max_clients(-1);
 		}
-			break;
-		default:
-			// *client << ERR_UNKNOWNMODE_472(*client);
-			break;
 	}
-	// +i :
-	// +t [topic] :
-	// +k [key] :
-	// +o [nickname] :
-	// +l [max_users] :
+	break;
+	case 4:
+	{
+		if (have_more_params)
+		{
+			int max_users = std::atoi(params[1].c_str());
+			if (max_users <= 0)
+			{
+				// *client << ERR_BADCHANMASK_476(*client);
+				return;
+			}
+			targetChnl->set_max_clients(max_users);
+		}
+		else
+			targetChnl->set_max_clients(-1);
+	}
+	break;
+	default:
+		// *client << ERR_UNKNOWNMODE_472(*client);
+		break;
+	}
 }
 
 Server::Server() : _port(0), _password(""), _server_fd(0) {}
