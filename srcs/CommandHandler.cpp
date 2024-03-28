@@ -42,7 +42,7 @@ void CommandHandler::topic(std::set<Channel *> channels, Client *client,
   // 채널 토픽 변경
   else {
     // ERR_CHANOPRIVSNEEDED
-    if ((*channel_it)->g[et_mode(TOPIC_RESTRICTED) &&
+    if ((*channel_it)->get_mode(TOPIC_RESTRICTED) &&
         !(*channel_it)->is_operator(client))
       return;
 
