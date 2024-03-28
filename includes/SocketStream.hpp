@@ -13,16 +13,18 @@ class SocketStream {
   static const int BUFFER_SIZE = 1024;
   static const int LINE_SIZE_MAX = 512;
 
-  const struct sockaddr_in _addr;
-  const socklen_t _addr_len;
+  struct sockaddr_in _addr;
+  socklen_t _addr_len;
   const int _fd;
   std::string _read_buffer;
   std::string _write_buffer;
   char *_raw_buffer;
 
-  SocketStream();                         // 사용하지 않는 생성자
-  SocketStream(const SocketStream &src);  // 사용하지 않는 생성자
-  SocketStream &operator=(const SocketStream &src);  // 사용하지 않는 연산자
+  // 사용 X
+  SocketStream();  // 사용하지 않는 생성자
+  SocketStream(__unused const SocketStream &src);  // 사용하지 않는 생성자
+  SocketStream &operator=(
+      __unused const SocketStream &src);  // 사용하지 않는 연산자
 
  public:
   SocketStream(const int server_fd);
@@ -39,19 +41,21 @@ class SocketStream {
   class ConnectionClosedException : public std::exception {
    public:
     ConnectionClosedException();
-    ConnectionClosedException(const ConnectionClosedException &src);
-    ConnectionClosedException &operator=(const ConnectionClosedException &src);
+    ConnectionClosedException(__unused const ConnectionClosedException &src);
+    ConnectionClosedException &operator=(
+        __unused const ConnectionClosedException &src);
     virtual ~ConnectionClosedException() throw();
     virtual const char *what() const throw();
   };
   class MessageTooLongException : public std::exception {
    public:
     MessageTooLongException();
-    MessageTooLongException(const MessageTooLongException &src);
-    MessageTooLongException &operator=(const MessageTooLongException &src);
+    MessageTooLongException(__unused const MessageTooLongException &src);
+    MessageTooLongException &operator=(
+        __unused const MessageTooLongException &src);
     virtual ~MessageTooLongException() throw();
     virtual const char *what() const throw();
   };
 };
 
-#endif  // IOHANDLER_HPP
+#endif  // SOCKETSTREAM_HPP
