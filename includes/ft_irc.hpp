@@ -19,6 +19,14 @@
 #include <iostream>
 #include <stdexcept>
 
+#ifndef __unused
+#define __unused __attribute__((unused))
+#endif
+
+#ifndef NICKNAME_MAX_LEN
+#define NICKNAME_MAX_LEN 31
+#endif
+
 #define DEBUG()                                                     \
   (std::cout << __FILE__ << ":" << __LINE__ << ": " << __FUNCTION__ \
              << ": Debug" << std::endl)

@@ -60,6 +60,8 @@ class Server;
   ("461 " + (client).get_nickname() + " :Not enough parameters\r\n")
 #define ERR_ALREADYREGISTRED_462(client) \
   ("462 " + (client).get_nickname() + " :You may not reregister\r\n")
+#define ERR_PASSWDMISMATCH_464(client) \
+  ("464 " + (client).get_nickname() + " :Password incorrect\r\n")
 
 typedef enum NUMERIC {
   // ERR
