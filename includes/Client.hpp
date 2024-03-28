@@ -35,59 +35,60 @@ class SocketStream;
 #define UNSET_USER_SET(client) ((client)._status &= ~0x10)
 #define UNSET_REGISTERED(client) ((client)._status &= ~0x20)
 
-class Client {
- private:
-  std::string _nickname;
-  std::string _username;
-  std::string _hostname;
-  std::string _servername;
-  std::string _realname;
-  SocketStream &_stream;
-  std::vector<Channel *> _channels;
+class Client
+{
+private:
+	std::string _nickname;
+	std::string _username;
+	std::string _hostname;
+	std::string _servername;
+	std::string _realname;
+	SocketStream &_stream;
+	std::vector<Channel *> _channels;
 
-  Client();                              // 사용하지 않는 생성자
-  Client(const Client &src);             // 사용하지 않는 생성자
-  Client &operator=(const Client &src);  // 사용하지 않는 연산자
+	Client();							  // 사용하지 않는 생성자
+	Client(const Client &src);			  // 사용하지 않는 생성자
+	Client &operator=(const Client &src); // 사용하지 않는 연산자
 
- public:
-  unsigned int _status;  // 수동으로 조작 금지
-  Client(int server_fd);
-  ~Client();
+public:
+	unsigned int _status; // 수동으로 조작 금지
+	Client(int server_fd);
+	~Client();
 
-  const Channel *  is_channel_operator() const;
+	Channel *is_channel_operator();
 
-  // 소켓 입출력
-  void recv();
-  void send();
+	// 소켓 입출력
+	void recv();
+	void send();
 
-  // getter, setter
-  const std::string &get_nickname() const;
-  const std::string &get_username() const;
-  const std::string &get_hostname() const;
-  const std::string &get_servername() const;
-  const std::string &get_realname() const;
-  int get_fd() const;
+	// getter, setter
+	const std::string &get_nickname() const;
+	const std::string &get_username() const;
+	const std::string &get_hostname() const;
+	const std::string &get_servername() const;
+	const std::string &get_realname() const;
+	int get_fd() const;
 
-  void set_nickname(const std::string &nickname);
-  void set_username(const std::string &username);
-  void set_hostname(const std::string &hostname);
-  void set_servername(const std::string &servername);
-  void set_realname(const std::string &realname);
+	void set_nickname(const std::string &nickname);
+	void set_username(const std::string &username);
+	void set_hostname(const std::string &hostname);
+	void set_servername(const std::string &servername);
+	void set_realname(const std::string &realname);
 
-  std::vector<Channel *> &get_channels();
-  void join_channel(Channel *channel);
-  void part_channel(Channel *channel);
+	std::vector<Channel *> &get_channels();
+	void join_channel(Channel *channel);
+	void part_channel(Channel *channel);
 
-  // 연산자 오버로딩
-  bool operator==(const Client &other);
-  bool operator!=(const Client &other);
-  bool operator<(const Client &other);
-  bool operator>(const Client &other);
-  bool operator<=(const Client &other);
-  bool operator>=(const Client &other);
-  Client &operator<<(const std::string &data);
-  Client &operator>>(std::string &data);
-  Client &operator>>(std::vector<Message> &vec);
+	// 연산자 오버로딩
+	bool operator==(const Client &other);
+	bool operator!=(const Client &other);
+	bool operator<(const Client &other);
+	bool operator>(const Client &other);
+	bool operator<=(const Client &other);
+	bool operator>=(const Client &other);
+	Client &operator<<(const std::string &data);
+	Client &operator>>(std::string &data);
+	Client &operator>>(std::vector<Message> &vec);
 };
 
-#endif  // CLIENT_HPP
+#endif // CLIENT_HPP
