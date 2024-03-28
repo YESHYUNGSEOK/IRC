@@ -400,6 +400,7 @@ void Server::join_channel(Client *client, std::string msg)
 			}
 			Channel *new_channel = new Channel(*it, key, false, client);
 			_channels.insert(new_channel);
+			new_channel->add_client(client);
 			return;
 		}
 		// target channel exists
