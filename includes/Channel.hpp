@@ -22,6 +22,8 @@ public: // public getters && setters
 	std::string get_name() const;
 	std::string get_key() const;
 	std::string get_topic() const;
+	std::string get_topic_set_by() const;
+	std::time_t get_topic_set_time() const;
 	int get_max_clients() const;
 	bool get_mode(enum modeType mode) const;
 	bool is_channel_full() const;
@@ -31,6 +33,9 @@ public: // public getters && setters
 
 	void set_key(const std::string &key);
 	void set_topic(const std::string &topic);
+	void set_topic_set_by(const std::string &topic_set_by);
+	void set_topic_set_time();
+	void set_new_topic(const std::string &topic, const std::string &topic_set_by);
 	void set_max_clients(int max_clients);
 
 public: // public methods
@@ -58,7 +63,10 @@ public: // public methods
 private: // private members
 	std::string _name;
 	std::string _key;
+
 	std::string _topic;
+	std::string _topic_set_by;
+	std::time_t _topic_set_time;
 
 	bool _mode[3];
 	int _max_clients;

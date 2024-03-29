@@ -42,9 +42,9 @@ Server::Server(int port, std::string password)
 		throw std::runtime_error("[Server::run()]: listen() failed: " +
 								 std::string(strerror(errno)));
 
-	// 서버 생성 시간 저장
-	time_t now = time(0);
-	const_cast<std::string &>(_created_at) = asctime(gmtime(&now));
+  // 서버 생성 시간 저장
+  time_t now = time(0);
+  _created_at = asctime(gmtime(&now));
 }
 
 void Server::run()
@@ -127,51 +127,51 @@ void Server::accept_new_client()
 	_clients.insert(client); // 새로운 클라이언트를 _clients에 추가
 }
 
-void Server::read_client(Client *client)
-{
-	// 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
-	client->recv();
+void Server::read_client(Client *client) {
+  // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
+  client->recv();
 
-	std::string line;
+  std::string line;
 
-	while (true)
-	{
-		try
-		{
-			*client >> line;
+  while (true) {
+    try {
+      *client >> line;
 
-			if (line.length() == 0)
-				break;
-			else if (line.length() == 2)
-				continue;
-			Message msg(line);
-			switch (msg.get_command())
-			{
-			case Message::CAP:
-				CAP(client, msg.get_params());
-				break;
-			case Message::PASS:
-				PASS(client, msg.get_params());
-				break;
-			case Message::NICK:
-				NICK(client, msg.get_params());
-				break;
-			case Message::USER:
-				USER(client, msg.get_params());
-				break;
-			case Message::JOIN:
-				join_channel(client, msg.get_params()[0]);
-				break;
-			default:
-				*client << ERR_UNKNOWNCOMMAND_421(*client, msg.get_params()[0]);
-				break;
-			}
-		}
-		catch (SocketStream::MessageTooLongException &e)
-		{
-			*client << ERR_INPUTTOOLONG_417(*client);
-		}
-	}
+      if (line.length() == 0)
+        break;
+      else if (line.length() == 2)
+        continue;
+      Message msg(line);
+      switch (msg.get_command()) {
+        case Message::CAP:
+          CAP(client, msg.get_params());
+          break;
+        case Message::PASS:
+          PASS(client, msg.get_params());
+          break;
+        case Message::NICK:
+          NICK(client, msg.get_params());
+          break;
+        case Message::USER:
+          USER(client, msg.get_params());
+          break;
+        case Message::JOIN:
+          join_channel(client, msg.get_params()[0]);
+          break;
+        case Message::PING:
+          PING(client, msg.get_params());
+          break;
+        case Message::PONG:
+          PONG(client, msg.get_params());
+          break;
+        default:
+          *client << ERR_UNKNOWNCOMMAND_421(*client, msg.get_params()[0]);
+          break;
+      }
+    } catch (SocketStream::MessageTooLongException &e) {
+      *client << ERR_INPUTTOOLONG_417(*client);
+    }
+  }
 }
 
 void Server::write_client(Client *client)
@@ -180,148 +180,122 @@ void Server::write_client(Client *client)
 	client->send();
 }
 
-void Server::register_client(Client *client)
-{
-	if (IS_REGISTERED(*client) || IS_IN_NEGOTIATION(*client) ||
-		!IS_PASS_CONFIRMED(*client) || !IS_NICK_SET(*client) ||
-		!IS_USER_SET(*client))
-		return;
-	if (!IS_IN_NEGOTIATION(*client) && IS_NICK_SET(*client) &&
-		IS_USER_SET(*client))
-	{
-		SET_REGISTERED(*client);
-		*client << RPL_WELCOME_001(*client);
-		*client << RPL_YOURHOST_002(*client);
-		*client << RPL_CREATED_003(*client, _created_at);
-		*client << RPL_MYINFO_004(*client);
-		// *client << RPL_ISUPPORT_005(*client); - 구현 필요
-	}
+void Server::register_client(Client *client) {
+  // 등록되지 않고, 패스워드가 확인되고, 닉네임, 유저네임이 설정되었을 때
+  if (client->is_registered() || client->is_in_negotiation() ||
+      !client->is_nick_set() || !client->is_user_set())
+    return;
+  // PING 구현할거면 PONG 수신했는지 확인 필요
+  else if (true) {
+    client->set_registered(true);
+    // PING(client); - 구현 할지 결정 필요
+    *client << RPL_WELCOME_001(*client);
+    *client << RPL_YOURHOST_002(*client);
+    *client << RPL_CREATED_003(*client, _created_at);
+    *client << RPL_MYINFO_004(*client);
+    // *client << RPL_ISUPPORT_005(*client); - 구현 필요
+  }
 }
 
-bool Server::is_valid_nickname(const std::string &nickname)
-{
-	if (nickname.size() > 9)
-		return false;
-	for (std::string::const_iterator it = nickname.begin(); it != nickname.end();
-		 it++)
-	{
-		if (!isalnum(*it) && *it != '-' && *it != '[' && *it != ']' && *it != '\\')
-			return false;
-	}
-	return true;
+bool Server::is_nick_in_use(const std::string &nickname) {
+  for (std::set<Client *>::iterator it = _clients.begin(); it != _clients.end();
+       it++) {
+    if ((*it)->get_nickname() == nickname) return true;
+  }
+  return false;
 }
 
-bool Server::is_nick_in_use(const std::string &nickname)
-{
-	for (std::set<Client *>::iterator it = _clients.begin(); it != _clients.end();
-		 it++)
-	{
-		if ((*it)->get_nickname() == nickname)
-			return true;
-	}
-	return false;
+void Server::CAP(Client *client, const std::vector<std::string> &params) {
+  for (std::vector<std::string>::const_iterator it = params.begin();
+       it != params.end(); it++) {
+    std::cout << *it << std::endl;
+  }
+  if (params.size() == 0) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
+    return;
+  } else if (params[0] == "LS") {
+    if (!client->is_cap_negotiated()) client->set_in_negotiation(true);
+    *client << RPL_CAP_LS(*client);
+  } else if (params[0] == "LIST") {
+    *client << RPL_CAP_LIST(*client);
+  } else if (params[0] == "REQ") {
+    if (params.size() < 2)
+      *client << ERR_NEEDMOREPARAMS_461(*client);
+    else
+      *client << RPL_CAP_NAK(*client, params[1]);
+  } else if (params[0] == "END") {
+    if (client->is_in_negotiation()) {
+      client->set_in_negotiation(false);
+      client->set_cap_negotiated(true);
+      register_client(client);
+    }
+  } else {
+    *client << ERR_INVALIDCAPCMD_410(*client, params[0]);
+  }
+}
+void Server::PASS(Client *client, const std::vector<std::string> &params) {
+  if (params.size() == 0) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
+  } else if (params[0] == _password)
+    client->set_pass_confirmed(true);
+  else
+    *client << ERR_PASSWDMISMATCH_464(*client);
+}
+void Server::NICK(Client *client, const std::vector<std::string> &params) {
+  if (!client->is_pass_confirmed()) {
+    *client << ERR_NOTREGISTERED_451(*client);
+  } else if (params.size() == 0) {
+    *client << ERR_NONICKNAMEGIVEN_431(*client);
+  } else if (!Message::is_valid_nick(params[0])) {
+    *client << ERR_ERRONEUSNICKNAME_432(*client, params[0]);
+  } else if (is_nick_in_use(params[0])) {
+    *client << ERR_NICKNAMEINUSE_433(*client, params[0]);
+  } else if (client->is_registered()) {
+    std::string old_nickname = client->get_nickname();
+    client->set_nickname(params[0]);
+
+    std::set<Client *>::iterator it = _clients.begin();
+    for (; it != _clients.end(); it++) {
+      if (*it == client) continue;
+      **it << RPL_BRDCAST_NICKCHANGE(*client, old_nickname);
+    }
+  } else {
+    client->set_nickname(params[0]);
+    client->set_nick_set(true);
+    register_client(client);
+  }
+}
+void Server::USER(Client *client, const std::vector<std::string> &params) {
+  if (!client->is_pass_confirmed()) {
+    *client << ERR_NOTREGISTERED_451(*client);
+  } else if (client->is_registered()) {
+    *client << ERR_ALREADYREGISTRED_462(*client);
+  } else if (params.size() < 4) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
+  } else {
+    client->set_username(params[0]);
+    client->set_hostname(params[1]);  // 서버간 통신용이지만 일단 사용
+    client->set_servername(params[2]);  // 서버간 통신용이지만 일단 사용
+    client->set_realname(params[3]);
+    client->set_user_set(true);
+    register_client(client);
+  }
 }
 
-void Server::CAP(Client *client, const std::vector<std::string> &params)
-{
-	for (std::vector<std::string>::const_iterator it = params.begin();
-		 it != params.end(); it++)
-	{
-		std::cout << *it << std::endl;
-	}
-	if (params.size() == 0)
-	{
-		*client << ERR_NEEDMOREPARAMS_461(*client);
-		return;
-	}
-	else if (params[0] == "LS")
-	{
-		if (!IS_REGISTERED(*client))
-			SET_IN_NEGOTIATION(*client);
-		*client << RPL_CAP_LS(*client);
-	}
-	else if (params[0] == "LIST")
-	{
-		*client << RPL_CAP_LIST(*client);
-	}
-	else if (params[0] == "REQ")
-	{
-		if (params.size() < 2)
-			*client << ERR_NEEDMOREPARAMS_461(*client);
-		else
-			*client << RPL_CAP_NAK(*client, params[1]);
-	}
-	else if (params[0] == "END")
-	{
-		if (IS_IN_NEGOTIATION(*client))
-		{
-			UNSET_IN_NEGOTIATION(*client);
-			SET_CAP_NEGOTIATED(*client);
-		}
-		// register_client(client);
-	}
-	else
-	{
-		*client << ERR_INVALIDCAPCMD_410(*client, params[0]);
-	}
+void Server::PING(Client *client, const std::vector<std::string> &params) {
+  if (params.size() == 0) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
+  } else {
+    *client << RPL_PONG(*client, params[0]);
+  }
 }
-void Server::PASS(Client *client, const std::vector<std::string> &params)
-{
-	if (params.size() == 0)
-	{
-		*client << ERR_NEEDMOREPARAMS_461(*client);
-	}
-	else if (params[0] == _password)
-		SET_PASS_CONFIRMED(*client);
-}
-void Server::NICK(Client *client, const std::vector<std::string> &params)
-{
-	if (!IS_PASS_CONFIRMED(*client))
-	{
-		*client << ERR_NOTREGISTERED_451(*client);
-	}
-	else if (params.size() == 0)
-	{
-		*client << ERR_NONICKNAMEGIVEN_431(*client);
-	}
-	else if (!is_valid_nickname(params[0]))
-	{
-		*client << ERR_ERRONEUSNICKNAME_432(*client, params[0]);
-	}
-	else if (is_nick_in_use(params[0]))
-	{
-		*client << ERR_NICKNAMEINUSE_433(*client, params[0]);
-	}
-	else
-	{
-		client->set_nickname(params[0]);
-		SET_NICK_SET(*client);
-		register_client(client);
-	}
-}
-void Server::USER(Client *client, const std::vector<std::string> &params)
-{
-	if (!IS_PASS_CONFIRMED(*client))
-	{
-		*client << ERR_NOTREGISTERED_451(*client);
-	}
-	else if (IS_REGISTERED(*client))
-	{
-		*client << ERR_ALREADYREGISTRED_462(*client);
-	}
-	else if (params.size() < 4)
-	{
-		*client << ERR_NEEDMOREPARAMS_461(*client);
-	}
-	else
-	{
-		client->set_username(params[0]);
-		client->set_hostname(params[1]);   // 서버간 통신용이지만 일단 사용
-		client->set_servername(params[2]); // 서버간 통신용이지만 일단 사용
-		client->set_realname(params[3]);
-		SET_USER_SET(*client);
-		register_client(client);
-	}
+
+void Server::PONG(Client *client, const std::vector<std::string> &params) {
+  (void)client;
+  (void)params;
+  // 대충 PING 대기중인지 확인하는 코드
+  // PING 대기중이면 PONG 수신 후 PING 대기중 해제
+  // 아니면 PONG 수신 후 무시
 }
 
 std::vector<std::string> Server::split_tokens(const std::string &str,
@@ -559,17 +533,22 @@ void Server::MODE(Client *client, const std::vector<std::string> &params)
 	}
 }
 
-Server::Server() : _port(0), _password(""), _server_fd(0) {}
+// 사용하지 않는 생성자
+Server::Server() : _port(0), _password(""), _server_fd(0) {
+  DEBUG();
+  throw std::runtime_error("Server(): default constructor is not allowed");
+}
 
-Server::Server(const Server &src)
-	: _port(src._port), _password(src._password), _server_fd(src._server_fd) {}
+Server::Server(__unused const Server &src)
+    : _port(0), _password(""), _server_fd(0) {
+  DEBUG();
+  throw std::runtime_error("Server(): copy constructor is not allowed");
+}
 
-Server &Server::operator=(const Server &src)
-{
-	const_cast<int &>(_port) = src._port;
-	const_cast<std::string &>(_password) = src._password;
-	const_cast<int &>(_server_fd) = src._server_fd;
-	return *this;
+Server &Server::operator=(__unused const Server &src) {
+  DEBUG();
+  throw std::runtime_error("Server(): operator= is not allowed");
+  return *this;
 }
 
 Server::~Server() { close(_server_fd); }

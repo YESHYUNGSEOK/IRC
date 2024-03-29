@@ -21,23 +21,24 @@
 class Client;
 class Channel;
 
-class Server
-{
-private:
-	const int _port;
-	const std::string _password;
-	const std::string _created_at;
-	int _server_fd;
-	fd_set _master_fds;
-	fd_set _read_fds;
-	struct sockaddr_in _addr;
+
+class Server {
+ private:
+  const int _port;
+  const std::string _password;
+  std::string _created_at;
+  const int _server_fd;
+  fd_set _master_fds;
+  fd_set _read_fds;
+  struct sockaddr_in _addr;
 
 	std::set<Client *> _clients;
 	std::set<Channel *> _channels;
 
-	Server();
-	Server(const Server &src);
-	Server &operator=(const Server &src);
+  // 사용 X
+  Server();
+  Server(__unused const Server &src);
+  Server &operator=(__unused const Server &src);
 
 	// private utils
 	std::vector<std::string> split_tokens(const std::string &msg,
@@ -49,17 +50,18 @@ private:
 	void read_client(Client *client);
 	void write_client(Client *client);
 
-	// private command handlers
-	void register_client(Client *client);
-	bool is_valid_nickname(const std::string &nickname);
-	bool is_nick_in_use(const std::string &nickname);
-	int is_valid_option(const std::string &option);
+  // private command handlers
+  void register_client(Client *client);
+  bool is_nick_in_use(const std::string &nickname);
+  int is_valid_option(const std::string &option);
 
-	// 명령어 처리
-	void CAP(Client *client, const std::vector<std::string> &params);
-	void PASS(Client *client, const std::vector<std::string> &params);
-	void NICK(Client *client, const std::vector<std::string> &params);
-	void USER(Client *client, const std::vector<std::string> &params);
+  // 명령어 처리
+  void CAP(Client *client, const std::vector<std::string> &params);
+  void PASS(Client *client, const std::vector<std::string> &params);
+  void NICK(Client *client, const std::vector<std::string> &params);
+  void USER(Client *client, const std::vector<std::string> &params);
+  void PING(Client *client, const std::vector<std::string> &params);
+  void PONG(Client *client, const std::vector<std::string> &params);
 
 	// JOIN 명령어 처리
 	void join_channel(Client *client, std::string msg);

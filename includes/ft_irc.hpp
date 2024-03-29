@@ -19,6 +19,26 @@
 #include <iostream>
 #include <stdexcept>
 
+#ifndef __unused
+#define __unused __attribute__((unused))
+#endif
+
+#ifndef NICKNAME_MAX_LEN
+#define NICKNAME_MAX_LEN 31
+#endif
+
+#ifndef SERVER_PREFIX
+#define SERVER_PREFIX (":localhost")
+#endif
+
+#ifndef AVAIL_USRMOD
+#define AVAIL_USRMOD ("itkol")
+#endif
+
+#ifndef AVAIL_CHANMOD
+#define AVAIL_CHANMOD ("itkol")
+#endif
+
 #define DEBUG()                                                     \
   (std::cout << __FILE__ << ":" << __LINE__ << ": " << __FUNCTION__ \
              << ": Debug" << std::endl)

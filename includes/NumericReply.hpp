@@ -9,10 +9,6 @@
 
 class Server;
 
-#define SERVER_PREFIX (":localhost")
-#define AVAIL_USRMOD ("itkol")
-#define AVAIL_CHANMOD ("itkol")
-
 #define CLIENT_SOURCE(client)                                      \
   ((client).get_nickname() + "!" + (client).get_username() + "@" + \
    (client).get_hostname())
@@ -37,6 +33,13 @@ class Server;
 #define RPL_CAP_NAK(client, params) \
   ("CAP " + (client).get_nickname() + " NAK :" + params + "\r\n")
 
+// define NICK_REPLIES
+#define RPL_BRDCAST_NICKCHANGE(client, old_nick) \
+  (":" + (old_nick) + " NICK " + (client).get_nickname() + "\r\n")
+
+// define PING_REPLIES
+#define RPL_PONG(client, params) ("PONG :" + params + "\r\n")
+
 // define ERR_REPLIES
 #define ERR_INVALIDCAPCMD_410(client, command)          \
   ("410 " + (client).get_nickname() + " " + (command) + \
@@ -60,6 +63,8 @@ class Server;
   ("461 " + (client).get_nickname() + " :Not enough parameters\r\n")
 #define ERR_ALREADYREGISTRED_462(client) \
   ("462 " + (client).get_nickname() + " :You may not reregister\r\n")
+#define ERR_PASSWDMISMATCH_464(client) \
+  ("464 " + (client).get_nickname() + " :Password incorrect\r\n")
 
 typedef enum NUMERIC {
   // ERR

@@ -2,7 +2,7 @@
 // #include "Channel.hpp"
 
 Channel::Channel(std::string name, std::string key, bool scope, Client *host)
-    : _name(name), _key(key), _max_clients(-1) {
+    : _name(name), _key(key), _topic(""), _max_clients(-1) {
   add_client(host);
   add_operator(host);
   if (scope == false)  // public
@@ -21,9 +21,15 @@ std::string Channel::get_key() const { return _key; }
 
 std::string Channel::get_topic() const { return _topic; }
 
+std::string Channel::get_topic_set_by() const { return _topic_set_by; }
+
+std::time_t Channel::get_topic_set_time() const { return _topic_set_time; }
+
 bool Channel::get_mode(enum modeType mode) const { return _mode[mode]; }
 
-bool Channel::is_channel_full() const { return _clients.size() >= static_cast<size_t>(_max_clients); }
+bool Channel::is_channel_full() const {
+  return _clients.size() >= static_cast<size_t>(_max_clients);
+}
 
 int Channel::get_max_clients() const { return _max_clients; }
 
@@ -32,6 +38,19 @@ void Channel::set_key(const std::string &key) { _key = key; }
 void Channel::set_max_clients(int max_clients) { _max_clients = max_clients; }
 
 void Channel::set_topic(const std::string &topic) { _topic = topic; }
+
+void Channel::set_topic_set_by(const std::string &topic_set_by) {
+  _topic_set_by = topic_set_by;
+}
+
+void Channel::set_topic_set_time() { _topic_set_time = std::time(NULL); }
+
+void Channel::set_new_topic(const std::string &topic,
+                            const std::string &topic_set_by) {
+  set_topic(topic);
+  set_topic_set_by(topic_set_by);
+  set_topic_set_time();
+}
 
 void Channel::add_client(Client *client) {
   if (_clients.size() >= static_cast<size_t>(_max_clients)) {

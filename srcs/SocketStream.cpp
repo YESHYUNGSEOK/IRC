@@ -1,29 +1,24 @@
 #include "SocketStream.hpp"
 
 // 사용하지 않는 생성자
-SocketStream::SocketStream()
-    : _addr(),
-      _addr_len(0),
-      _fd(0),
-      _read_buffer(""),
-      _write_buffer(""),
-      _raw_buffer(NULL) {
-  DEBUG_PRINT("SocketStream::SocketStream()");
+SocketStream::SocketStream() : _fd(0) {
+  DEBUG();
+  throw std::runtime_error(
+      "SocketStream::SocketStream(): Do not use this constructor");
 }
 
 // 사용하지 않는 생성자
-SocketStream::SocketStream(__unused const SocketStream &src)
-    : _addr(),
-      _addr_len(0),
-      _fd(0),
-      _read_buffer(""),
-      _write_buffer(""),
-      _raw_buffer(NULL) {
-  DEBUG_PRINT("SocketStream::SocketStream(const SocketStream &src)");
+SocketStream::SocketStream(__unused const SocketStream &src) : _fd(0) {
+  DEBUG();
+  throw std::runtime_error(
+      "SocketStream::SocketStream(): Do not use this constructor");
 }
 
 // 사용하지 않는 연산자 - 컨테이너를 사용하면 필요할 수 있음
 SocketStream &SocketStream::operator=(__unused const SocketStream &src) {
+  DEBUG();
+  throw std::runtime_error(
+      "SocketStream::operator=(): Do not use this operator");
   return *this;
 }
 
@@ -31,10 +26,8 @@ SocketStream::SocketStream(const int server_fd)
     : _addr(),
       _addr_len(sizeof(_addr)),
       // 클라이언트의 연결을 수락
-      _fd(accept(server_fd,
-                 const_cast<struct sockaddr *>(
-                     reinterpret_cast<const struct sockaddr *>(&_addr)),
-                 const_cast<socklen_t *>(&_addr_len))),
+      _fd(accept(server_fd, reinterpret_cast<struct sockaddr *>(&_addr),
+                 &_addr_len)),
       _read_buffer(),
       _write_buffer(),
       _raw_buffer(new char[BUFFER_SIZE]) {

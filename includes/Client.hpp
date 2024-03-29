@@ -2,6 +2,7 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
+#include <bitset>
 #include <vector>
 
 #include "Channel.hpp"
@@ -10,85 +11,92 @@
 #include "SocketStream.hpp"
 #include "ft_irc.hpp"
 
+#ifndef CLIENT_STATUS_SIZE
+#define CLIENT_STATUS_SIZE 10
+#endif
+
 class Channel;
 class Message;
 class SocketStream;
 
-#define IS_CAP_NEGOTIATED(client) (((client)._status & 0x01) == 0x01)
-#define IS_IN_NEGOTIATION(client) (((client)._status & 0x02) == 0x02)
-#define IS_PASS_CONFIRMED(client) (((client)._status & 0x04) == 0x04)
-#define IS_NICK_SET(client) (((client)._status & 0x08) == 0x08)
-#define IS_USER_SET(client) (((client)._status & 0x10) == 0x10)
-#define IS_REGISTERED(client) (((client)._status & 0x20) == 0x20)
+class Client {
+ private:
+  std::bitset<CLIENT_STATUS_SIZE> _status;
+  std::string _nickname;
+  std::string _username;
+  std::string _hostname;
+  std::string _servername;
+  std::string _realname;
+  SocketStream &_stream;
+  std::vector<Channel *> _channels;
 
-#define SET_CAP_NEGOTIATED(client) ((client)._status |= 0x01)
-#define SET_IN_NEGOTIATION(client) ((client)._status |= 0x02)
-#define SET_PASS_CONFIRMED(client) ((client)._status |= 0x04)
-#define SET_NICK_SET(client) ((client)._status |= 0x08)
-#define SET_USER_SET(client) ((client)._status |= 0x10)
-#define SET_REGISTERED(client) ((client)._status |= 0x20)
+  // 사용 X
+  Client();                   // 사용하지 않는 생성자
+  Client(const Client &src);  // 사용하지 않는 생성자
+  Client &operator=(__unused const Client &src);  // 사용하지 않는 연산자
 
-#define UNSET_CAP_NEGOTIATED(client) ((client)._status &= ~0x01)
-#define UNSET_IN_NEGOTIATION(client) ((client)._status &= ~0x02)
-#define UNSET_PASS_CONFIRMED(client) ((client)._status &= ~0x04)
-#define UNSET_NICK_SET(client) ((client)._status &= ~0x08)
-#define UNSET_USER_SET(client) ((client)._status &= ~0x10)
-#define UNSET_REGISTERED(client) ((client)._status &= ~0x20)
+ public:
+  enum Status {
+    CAP_NEGOTIATED = 0,
+    IN_NEGOTIATION,
+    PASS_CONFIRMED,
+    NICK_SET,
+    USER_SET,
+    REGISTERED
+  };
 
-class Client
-{
-private:
-	std::string _nickname;
-	std::string _username;
-	std::string _hostname;
-	std::string _servername;
-	std::string _realname;
-	SocketStream &_stream;
-	std::vector<Channel *> _channels;
+  Client(int server_fd);
+  ~Client();
 
-	Client();							  // 사용하지 않는 생성자
-	Client(const Client &src);			  // 사용하지 않는 생성자
-	Client &operator=(const Client &src); // 사용하지 않는 연산자
+  // join, part channel
+  void join_channel(Channel *channel);
+  void part_channel(Channel *channel);
 
-public:
-	unsigned int _status; // 수동으로 조작 금지
-	Client(int server_fd);
-	~Client();
+  // 소켓 입출력
+  void recv();
+  void send();
 
-	Channel *is_channel_operator(const std::string &channel_name);
+  // getter, setter
+  const std::string &get_nickname() const;
+  const std::string &get_username() const;
+  const std::string &get_hostname() const;
+  const std::string &get_servername() const;
+  const std::string &get_realname() const;
+  int get_fd() const;
+  std::vector<Channel *> &get_channels();
+  Channel *is_channel_operator(const std::string &channel_name);
 
-	// 소켓 입출력
-	void recv();
-	void send();
+  void set_nickname(const std::string &nickname);
+  void set_username(const std::string &username);
+  void set_hostname(const std::string &hostname);
+  void set_servername(const std::string &servername);
+  void set_realname(const std::string &realname);
 
-	// getter, setter
-	const std::string &get_nickname() const;
-	const std::string &get_username() const;
-	const std::string &get_hostname() const;
-	const std::string &get_servername() const;
-	const std::string &get_realname() const;
-	int get_fd() const;
+  // status bitset
+  bool is_cap_negotiated() const;
+  bool is_in_negotiation() const;
+  bool is_pass_confirmed() const;
+  bool is_nick_set() const;
+  bool is_user_set() const;
+  bool is_registered() const;
 
-	void set_nickname(const std::string &nickname);
-	void set_username(const std::string &username);
-	void set_hostname(const std::string &hostname);
-	void set_servername(const std::string &servername);
-	void set_realname(const std::string &realname);
+  void set_cap_negotiated(bool cap_negotiated);
+  void set_in_negotiation(bool in_negotiation);
+  void set_pass_confirmed(bool pass_confirmed);
+  void set_nick_set(bool nick_set);
+  void set_user_set(bool user_set);
+  void set_registered(bool registered);
 
-	std::vector<Channel *> &get_channels();
-	void join_channel(Channel *channel);
-	void part_channel(Channel *channel);
-
-	// 연산자 오버로딩
-	bool operator==(const Client &other);
-	bool operator!=(const Client &other);
-	bool operator<(const Client &other);
-	bool operator>(const Client &other);
-	bool operator<=(const Client &other);
-	bool operator>=(const Client &other);
-	Client &operator<<(const std::string &data);
-	Client &operator>>(std::string &data);
-	Client &operator>>(std::vector<Message> &vec);
+  // 연산자 오버로딩
+  bool operator==(const Client &other);
+  bool operator!=(const Client &other);
+  bool operator<(const Client &other);
+  bool operator>(const Client &other);
+  bool operator<=(const Client &other);
+  bool operator>=(const Client &other);
+  Client &operator<<(const std::string &data);
+  Client &operator>>(std::string &data);
+  Client &operator>>(std::vector<Message> &vec);
 };
 
 #endif // CLIENT_HPP
