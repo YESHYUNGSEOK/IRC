@@ -441,7 +441,7 @@ void Server::join_channel(Client *client, std::string msg)
 
 int Server::is_valid_option(const std::string &option)
 {
-	if (option.size() != 2 || option[0] != '+')
+	if (option.size() != 2 || option[0] != '+' || option[0] != '-')
 		return -1;
 	if (option == "i")
 		return 0;
@@ -458,71 +458,88 @@ int Server::is_valid_option(const std::string &option)
 
 void Server::MODE(Client *client, const std::vector<std::string> &params)
 {
-	Channel *targetChnl = client->is_channel_operator();
+	if (params.size() < 2)
+	{
+		// *client << ERR_NEEDMOREPARAMS_461(*client);
+		return;
+	}
+	Channel *targetChnl = client->is_channel_operator(params[0]);
 	if (!targetChnl)
 	{
 		// *client << ERR_CHANOPRIVSNEEDED_482(*client);
 		return;
 	}
-	if (params.size() < 1)
-	{
-		*client << ERR_NEEDMOREPARAMS_461(*client);
-		return;
-	}
-	bool have_more_params = params.size() == 2;
-	switch (is_valid_option(params[0]))
+	switch (is_valid_option(params[1]))
 	{
 	case 0:
 	{
-		if (!have_more_params)
-		{
-			if (targetChnl->get_mode(INVITE_ONLY) == true)
-				targetChnl->set_channel_mode(INVITE_ONLY, false);
-			else
-				targetChnl->set_channel_mode(INVITE_ONLY, true);
-		}
+		if (params[1][0] == '+')
+			targetChnl->set_channel_mode(INVITE_ONLY, true);
+		else
+			targetChnl->set_channel_mode(INVITE_ONLY, false);
 	}
 	break;
 	case 1:
 	{
-		if (!have_more_params)
-		{
-			if (targetChnl->get_mode(TOPIC_RESTRICTED) == true)
-				targetChnl->set_channel_mode(TOPIC_RESTRICTED, false);
-			else
-				targetChnl->set_channel_mode(TOPIC_RESTRICTED, true);
-		}
+		if (params[1][0] == '+')
+			targetChnl->set_channel_mode(TOPIC_RESTRICTED, true);
+		else
+			targetChnl->set_channel_mode(TOPIC_RESTRICTED, false);
 	}
 	break;
 	case 2:
 	{
-		if (!have_more_params)
-			targetChnl->set_key(""); // remove key
+		if (params[1][0] == '+')
+		{
+			if (params.size() < 3)
+			{
+				// *client << ERR_NEEDMOREPARAMS_461(*client);
+				return;
+			}
+			targetChnl->set_key(params[2]);
+		}
 		else
-			targetChnl->set_key(params[1]);
+		{
+			targetChnl->set_key("");
+		}
 	}
 	break;
 	case 3:
 	{
-		if (have_more_params)
+		if (params.size() < 3)
 		{
-			for (std::set<Client *>::iterator it = targetChnl->get_clients().begin();
-				 it != targetChnl->get_clients().end(); it++)
+			// *client << ERR_NEEDMOREPARAMS_461(*client);
+			return;
+		}
+		Client *targetIt = 0;
+		for (std::set<Client *>::iterator it = _clients.begin();
+			 it != _clients.end(); it++)
+		{
+			if ((*it)->get_nickname() == params[2])
 			{
-				if ((*it)->get_nickname() == params[1])
-				{
-					targetChnl->add_operator(*it);
-					return;
-				}
+				targetIt = *it;
+				break;
 			}
+		}
+		if (!targetIt)
+		{
+			if (params[1][0] == '+')
+				targetChnl->add_operator(targetIt);
+			else
+				targetChnl->remove_operator(targetIt);
 		}
 	}
 	break;
 	case 4:
 	{
-		if (have_more_params)
+		if (params[1][0] == '+')
 		{
-			int max_users = std::atoi(params[1].c_str());
+			if (params.size() < 3)
+			{
+				// *client << ERR_NEEDMOREPARAMS_461(*client);
+				return;
+			}
+			int max_users = std::atoi(params[2].c_str());
 			if (max_users <= 0)
 			{
 				// *client << ERR_BADCHANMASK_476(*client);
@@ -531,7 +548,9 @@ void Server::MODE(Client *client, const std::vector<std::string> &params)
 			targetChnl->set_max_clients(max_users);
 		}
 		else
+		{
 			targetChnl->set_max_clients(-1);
+		}
 	}
 	break;
 	default:

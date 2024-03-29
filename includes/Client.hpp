@@ -55,7 +55,7 @@ public:
 	Client(int server_fd);
 	~Client();
 
-	Channel *is_channel_operator();
+	Channel *is_channel_operator(const std::string &channel_name);
 
 	// 소켓 입출력
 	void recv();

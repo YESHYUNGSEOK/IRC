@@ -21,16 +21,16 @@ const std::string &Client::get_servername() const { return _servername; }
 const std::string &Client::get_realname() const { return _realname; }
 int Client::get_fd() const { return _stream.get_fd(); }
 
-Channel *Client::is_channel_operator()
+Channel *Client::is_channel_operator(const std::string &channel_name)
 {
 	if (_channels.empty() == true)
 		return 0;
-	std::vector<Channel *>::reverse_iterator it = _channels.rbegin();
-	for (std::set<Client *>::iterator opIt = (*it)->get_operators().begin();
-		 opIt != (*it)->get_operators().end(); opIt++)
+	std::vector<Channel *>::iterator it = _channels.begin();
+	while (it != _channels.end())
 	{
-		if (*opIt == this)
+		if ((*it)->get_name() == channel_name)
 			return *it;
+		it++;
 	}
 	return 0;
 }
