@@ -225,6 +225,15 @@ void Server::NICK(Client *client, const std::vector<std::string> &params) {
     *client << ERR_ERRONEUSNICKNAME_432(*client, params[0]);
   } else if (is_nick_in_use(params[0])) {
     *client << ERR_NICKNAMEINUSE_433(*client, params[0]);
+  } else if (client->is_registered()) {
+    std::string old_nickname = client->get_nickname();
+    client->set_nickname(params[0]);
+
+    std::set<Client *>::iterator it = _clients.begin();
+    for (; it != _clients.end(); it++) {
+      if (*it == client) continue;
+      **it << RPL_BRDCAST_NICKCHANGE(*client, old_nickname);
+    }
   } else {
     client->set_nickname(params[0]);
     client->set_nick_set(true);

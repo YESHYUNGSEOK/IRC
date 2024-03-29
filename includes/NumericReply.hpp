@@ -9,10 +9,6 @@
 
 class Server;
 
-#define SERVER_PREFIX (":localhost")
-#define AVAIL_USRMOD ("itkol")
-#define AVAIL_CHANMOD ("itkol")
-
 #define CLIENT_SOURCE(client)                                      \
   ((client).get_nickname() + "!" + (client).get_username() + "@" + \
    (client).get_hostname())
@@ -36,6 +32,10 @@ class Server;
 #define RPL_CAP_LIST(client) ("CAP " + (client).get_nickname() + " LIST :\r\n")
 #define RPL_CAP_NAK(client, params) \
   ("CAP " + (client).get_nickname() + " NAK :" + params + "\r\n")
+
+// define NICK_REPLIES
+#define RPL_BRDCAST_NICKCHANGE(client, old_nick) \
+  (":" + (old_nick) + " NICK " + (client).get_nickname() + "\r\n")
 
 // define ERR_REPLIES
 #define ERR_INVALIDCAPCMD_410(client, command)          \
