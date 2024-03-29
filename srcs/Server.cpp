@@ -140,6 +140,12 @@ void Server::read_client(Client *client) {
         case Message::JOIN:
           join_channel(client, msg.get_params()[0]);
           break;
+        case Message::PING:
+          PING(client, msg.get_params());
+          break;
+        case Message::PONG:
+          PONG(client, msg.get_params());
+          break;
         default:
           *client << ERR_UNKNOWNCOMMAND_421(*client, msg.get_params()[0]);
           break;
@@ -255,6 +261,22 @@ void Server::USER(Client *client, const std::vector<std::string> &params) {
     client->set_user_set(true);
     register_client(client);
   }
+}
+
+void Server::PING(Client *client, const std::vector<std::string> &params) {
+  if (params.size() == 0) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
+  } else {
+    *client << RPL_PONG(*client, params[0]);
+  }
+}
+
+void Server::PONG(Client *client, const std::vector<std::string> &params) {
+  (void)client;
+  (void)params;
+  // 대충 PING 대기중인지 확인하는 코드
+  // PING 대기중이면 PONG 수신 후 PING 대기중 해제
+  // 아니면 PONG 수신 후 무시
 }
 
 std::vector<std::string> Server::split_tokens(const std::string &str,

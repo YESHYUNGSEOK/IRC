@@ -58,6 +58,8 @@ class Server {
   void PASS(Client *client, const std::vector<std::string> &params);
   void NICK(Client *client, const std::vector<std::string> &params);
   void USER(Client *client, const std::vector<std::string> &params);
+  void PING(Client *client, const std::vector<std::string> &params);
+  void PONG(Client *client, const std::vector<std::string> &params);
 
   // JOIN 명령어 처리
   void join_channel(Client *client, std::string msg);
