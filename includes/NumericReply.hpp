@@ -37,6 +37,9 @@ class Server;
 #define RPL_BRDCAST_NICKCHANGE(client, old_nick) \
   (":" + (old_nick) + " NICK " + (client).get_nickname() + "\r\n")
 
+// define PING_REPLIES
+#define RPL_PONG(client, params) ("PONG :" + params + "\r\n")
+
 // define ERR_REPLIES
 #define ERR_INVALIDCAPCMD_410(client, command)          \
   ("410 " + (client).get_nickname() + " " + (command) + \
