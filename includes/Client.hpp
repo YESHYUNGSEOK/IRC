@@ -64,6 +64,7 @@ class Client {
   const std::string &get_realname() const;
   int get_fd() const;
   std::vector<Channel *> &get_channels();
+  Channel *is_channel_operator(const std::string &channel_name);
 
   void set_nickname(const std::string &nickname);
   void set_username(const std::string &username);
@@ -98,4 +99,4 @@ class Client {
   Client &operator>>(std::vector<Message> &vec);
 };
 
-#endif  // CLIENT_HPP
+#endif // CLIENT_HPP

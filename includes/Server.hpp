@@ -21,6 +21,7 @@
 class Client;
 class Channel;
 
+
 class Server {
  private:
   const int _port;
@@ -31,27 +32,28 @@ class Server {
   fd_set _read_fds;
   struct sockaddr_in _addr;
 
-  std::set<Client *> _clients;
-  std::set<Channel *> _channels;
+	std::set<Client *> _clients;
+	std::set<Channel *> _channels;
 
   // 사용 X
   Server();
   Server(__unused const Server &src);
   Server &operator=(__unused const Server &src);
 
-  // private utils
-  std::vector<std::string> split_tokens(const std::string &msg,
-                                        const char delim);
-  bool check_channel_name(const std::vector<std::string> &channel_tokens) const;
-  Channel *get_target_channel(const std::string &channel_name) const;
+	// private utils
+	std::vector<std::string> split_tokens(const std::string &msg,
+										  const char delim);
+	bool check_channel_name(const std::vector<std::string> &channel_tokens) const;
+	Channel *get_target_channel(const std::string &channel_name) const;
 
-  void accept_new_client();
-  void read_client(Client *client);
-  void write_client(Client *client);
+	void accept_new_client();
+	void read_client(Client *client);
+	void write_client(Client *client);
 
   // private command handlers
   void register_client(Client *client);
   bool is_nick_in_use(const std::string &nickname);
+  int is_valid_option(const std::string &option);
 
   // 명령어 처리
   void CAP(Client *client, const std::vector<std::string> &params);
@@ -61,14 +63,17 @@ class Server {
   void PING(Client *client, const std::vector<std::string> &params);
   void PONG(Client *client, const std::vector<std::string> &params);
 
-  // JOIN 명령어 처리
-  void join_channel(Client *client, std::string msg);
+	// JOIN 명령어 처리
+	void join_channel(Client *client, std::string msg);
 
- public:
-  Server(int port, std::string password);
-  ~Server();
+	// MODE 명령어 처리: ongoing...
+	void MODE(Client *client, const std::vector<std::string> &params);
 
-  void run();
+public:
+	Server(int port, std::string password);
+	~Server();
+
+	void run();
 };
 
 #endif
