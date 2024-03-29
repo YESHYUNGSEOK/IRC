@@ -24,7 +24,7 @@ public:
   static void oper();                                                                // param: name, password, channel list
   static void quit();                                                                // param: serv, client socket
   static void join();                                                                // param: channel list, user list
-  static void part();                                                                // param: channel, user
+  static void part(std::set<Channel *> channels, Client *client, Message message);   // param: channel, user
   static void topic(std::set<Channel *> channels, Client *client, Message message);  // param: channel list
   static void mode();                                                                // param: channel
   static void names();                                                               // param: user list
