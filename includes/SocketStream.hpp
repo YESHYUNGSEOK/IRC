@@ -8,17 +8,21 @@
 
 #include "ft_irc.hpp"
 
+#ifndef SOCKET_STREAM_BUFFER_SIZE
+#define SOCKET_STREAM_BUFFER_SIZE 1024
+#endif
+#ifndef SOCKET_STREAM_LINE_SIZE
+#define SOCKET_STREAM_LINE_SIZE 512
+#endif
+
 class SocketStream {
  private:
-  static const int BUFFER_SIZE = 1024;
-  static const int LINE_SIZE_MAX = 512;
-
   struct sockaddr_in _addr;
   socklen_t _addr_len;
   const int _fd;
   std::string _read_buffer;
   std::string _write_buffer;
-  char *_raw_buffer;
+  char _raw_buffer[SOCKET_STREAM_BUFFER_SIZE + 1];
 
   // 사용 X
   SocketStream();  // 사용하지 않는 생성자
