@@ -5,7 +5,7 @@
 #include <bitset>
 #include <vector>
 
-#include "Channel.hpp"
+// #include "Channel.hpp"
 #include "Message.hpp"
 #include "NumericReply.hpp"
 #include "SocketStream.hpp"
@@ -27,12 +27,12 @@ class Client {
   std::string _hostname;
   std::string _servername;
   std::string _realname;
+  std::vector<Channel *> _joined_channels;
   SocketStream &_stream;
-  std::vector<Channel *> _channels;
 
   // 사용 X
-  Client();                   // 사용하지 않는 생성자
-  Client(const Client &src);  // 사용하지 않는 생성자
+  Client();                            // 사용하지 않는 생성자
+  Client(__unused const Client &src);  // 사용하지 않는 생성자
   Client &operator=(__unused const Client &src);  // 사용하지 않는 연산자
 
  public:
@@ -63,8 +63,8 @@ class Client {
   const std::string &get_servername() const;
   const std::string &get_realname() const;
   int get_fd() const;
-  std::vector<Channel *> &get_channels();
-  Channel *is_channel_operator(const std::string &channel_name);
+  // std::vector<Channel *> &get_channels();
+  // Channel *is_channel_operator(const std::string &channel_name);
 
   void set_nickname(const std::string &nickname);
   void set_username(const std::string &username);
@@ -88,15 +88,11 @@ class Client {
   void set_registered(bool registered);
 
   // 연산자 오버로딩
-  bool operator==(const Client &other);
-  bool operator!=(const Client &other);
-  bool operator<(const Client &other);
-  bool operator>(const Client &other);
-  bool operator<=(const Client &other);
-  bool operator>=(const Client &other);
+  bool operator==(const Client &other) const;
+  bool operator!=(const Client &other) const;
+  bool operator<(const Client &other) const;
   Client &operator<<(const std::string &data);
   Client &operator>>(std::string &data);
-  Client &operator>>(std::vector<Message> &vec);
 };
 
-#endif // CLIENT_HPP
+#endif  // CLIENT_HPP

@@ -28,20 +28,21 @@ Client::Client(int server_fd)
       _stream(*new SocketStream(server_fd)) {
   DEBUG();
 }
-Client::~Client()
-{
-	delete &_stream;
-	DEBUG();
+Client::~Client() {
+  delete &_stream;
+  DEBUG();
 }
 
-void Client::join_channel(Channel *channel) { _channels.push_back(channel); }
+void Client::join_channel(Channel *channel) {
+  _joined_channels.push_back(channel);
+}
 
 void Client::part_channel(Channel *channel) {
-  std::vector<Channel *>::iterator it = _channels.begin();
-  while (it != _channels.end()) {
+  std::vector<Channel *>::iterator it = _joined_channels.begin();
+  while (it != _joined_channels.end()) {
     if (*it == channel) {
-      it = _channels.erase(it);
-      break;
+      _joined_channels.erase(it);
+      return;
     }
     it++;
   }
@@ -56,28 +57,12 @@ const std::string &Client::get_hostname() const { return _hostname; }
 const std::string &Client::get_servername() const { return _servername; }
 const std::string &Client::get_realname() const { return _realname; }
 int Client::get_fd() const { return _stream.get_fd(); }
-std::vector<Channel *> &Client::get_channels() { return _channels; }
-
-Channel *Client::is_channel_operator(const std::string &channel_name)
-{
-	if (_channels.empty() == true)
-		return 0;
-	std::vector<Channel *>::iterator it = _channels.begin();
-	while (it != _channels.end())
-	{
-		if ((*it)->get_name() == channel_name)
-			return *it;
-		it++;
-	}
-	return 0;
-}
 
 void Client::set_nickname(const std::string &nickname) { _nickname = nickname; }
 void Client::set_username(const std::string &username) { _username = username; }
 void Client::set_hostname(const std::string &hostname) { _hostname = hostname; }
-void Client::set_servername(const std::string &servername)
-{
-	_servername = servername;
+void Client::set_servername(const std::string &servername) {
+  _servername = servername;
 }
 void Client::set_realname(const std::string &realname) { _realname = realname; }
 
@@ -103,60 +88,21 @@ void Client::set_registered(bool registered) {
   _status.set(REGISTERED, registered);
 }
 
-bool Client::operator==(const Client &other) {
+bool Client::operator==(const Client &other) const {
   return _stream.get_fd() == other._stream.get_fd();
 }
-bool Client::operator!=(const Client &other)
-{
-	return _stream.get_fd() != other._stream.get_fd();
+bool Client::operator!=(const Client &other) const {
+  return _stream.get_fd() != other._stream.get_fd();
 }
-bool Client::operator<(const Client &other)
-{
-	return _stream.get_fd() < other._stream.get_fd();
+bool Client::operator<(const Client &other) const {
+  return _stream.get_fd() < other._stream.get_fd();
 }
-bool Client::operator>(const Client &other)
-{
-	return _stream.get_fd() > other._stream.get_fd();
+Client &Client::operator<<(const std::string &data) {
+  _stream << data;
+  return *this;
 }
-bool Client::operator<=(const Client &other)
-{
-	return _stream.get_fd() <= other._stream.get_fd();
+Client &Client::operator>>(std::string &data) {
+  _stream >> data;
+  return *this;
 }
-bool Client::operator>=(const Client &other)
-{
-	return _stream.get_fd() >= other._stream.get_fd();
-}
-Client &Client::operator<<(const std::string &data)
-{
-	_stream << data;
-	return *this;
-}
-Client &Client::operator>>(std::string &data)
-{
-	_stream >> data;
-	return *this;
-}
-Client &Client::operator>>(std::vector<Message> &vec)
-{
-	while (true)
-	{
-		try
-		{
-			std::string msg;
-
-			_stream >> msg;
-			if (msg.length() == 0)
-				break;
-			Message m(msg);
-			vec.push_back(m);
-		}
-		catch (SocketStream::MessageTooLongException &e)
-		{
-			// *this << ERR_MSGTOOLONG_STR;
-		}
-	}
-
-	return *this;
-}
-
 // Path: srcs/SocketStream.cpp
