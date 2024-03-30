@@ -23,16 +23,48 @@
 #define __unused __attribute__((unused))
 #endif
 
-#ifndef NICKNAME_MAX_LEN
-#define NICKNAME_MAX_LEN 31
+#ifndef SERVER_NAME
+#define SERVER_NAME ("FT_IRC")
 #endif
 
-#ifndef SERVER_PREFIX
-#define SERVER_PREFIX (":localhost")
+#ifndef SERVER_VERSION
+#define SERVER_VERSION ("1.0")
+#endif
+
+#ifndef CHANLIMIT
+#define CHANLIMIT 50
+#endif
+
+#ifndef CHANNELLEN
+#define CHANNELLEN 50
+#endif
+
+#ifndef CHANTYPES
+#define CHANTYPES ("#&")
+#endif
+
+#ifndef HOSTLEN
+#define HOSTLEN 63
+#endif
+
+#ifndef KICKLEN
+#define KICKLEN 80
+#endif
+
+#ifndef NICKLEN
+#define NICKLEN 9
+#endif
+
+#ifndef TOPICLEN
+#define TOPICLEN 80
+#endif
+
+#ifndef USERLEN
+#define USERLEN 10
 #endif
 
 #ifndef AVAIL_USRMOD
-#define AVAIL_USRMOD ("itkol")
+#define AVAIL_USRMOD ("a")
 #endif
 
 #ifndef AVAIL_CHANMOD
