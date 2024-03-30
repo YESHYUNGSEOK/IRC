@@ -2,78 +2,95 @@
 #ifndef CHANNEL_HPP
 #define CHANNEL_HPP
 
-#include <iostream>
+#include <bitset>
+#include <map>
 #include <set>
 
 #include "Client.hpp"
 
-class Client;
+class Channel {
+ public:
+  Channel(std::string name);
+  ~Channel();
 
-enum modeType
-{
-	SCOPE, // private must have key
-	INVITE_ONLY,
-	TOPIC_RESTRICTED
-};
+  enum ModeFlag { NEED_KEY, INVITE_ONLY, TOPIC_RESTRICTED, CLIENT_LIMIT_SET };
 
-class Channel
-{
-public: // public getters && setters
-	std::string get_name() const;
-	std::string get_key() const;
-	std::string get_topic() const;
-	std::string get_topic_set_by() const;
-	std::time_t get_topic_set_time() const;
-	int get_max_clients() const;
-	bool get_mode(enum modeType mode) const;
-	bool is_channel_full() const;
+  void init(Client *host);
+  void join(Client *client, const std::string &key);
+  void part(Client *client, const std::string &message);
+  void quit(Client *client);
+  void op_client(Client *client, Client *target);
+  void deop_client(Client *client, Client *target);
 
-	Channel(std::string name, std::string key, bool scope, Client *host);
-	~Channel();
+  // manage client
+  bool is_client_in_channel(Client *client) const;
+  Client *find_client(const std::string &nickname) const;
+  void update_client_nick(Client *client, const std::string &new_nick);
 
-	void set_key(const std::string &key);
-	void set_topic(const std::string &topic);
-	void set_topic_set_by(const std::string &topic_set_by);
-	void set_topic_set_time();
-	void set_new_topic(const std::string &topic, const std::string &topic_set_by);
-	void set_max_clients(int max_clients);
+  // manage operator
+  void add_operator(Client *client);  // TODO: 삭제하고 op_client로 대체
+  void remove_operator(Client *client);  // TODO: 삭제하고 deop_client로 대체
+  bool is_operator(Client *client) const;
+  Client *find_operator(const std::string &nickname) const;
 
-public: // public methods
-	// manage client
-	void add_client(Client *client);
-	void remove_client(Client *client);
-	bool is_client_in_channel(Client *client) const;
-	bool is_client_in_channel(std::string nickname) const;
-	std::set<Client *> &get_clients();
+  // manage client invitation
+  const std::set<Client *> &get_invited() const;
+  void invite_client(Client *client);
+  void uninvite_client(Client *client);
+  bool is_invited(Client *client) const;
+  Client *find_invited(const std::string &nickname) const;
 
-	// manage operator
-	void add_operator(Client *client);
-	void remove_operator(Client *client);
-	bool is_operator(Client *client) const;
-	std::set<Client *> &get_operators();
+  // manage mode
+  bool is_mode_set(ModeFlag flag) const;
+  void set_mode(ModeFlag flag, bool value);
 
-	// manage client invitation
-	void invite_client(Client *client);
-	bool is_invited(Client *client) const;
+  // manage key
+  const std::string &get_key() const;
+  void set_key(const std::string &key);
 
-	// set channel mode
-	void set_channel_mode(enum modeType mode, bool value);
-	bool get_channel_mode(enum modeType mode) const;
+  // manage max clients
+  bool is_channel_full() const;
+  std::size_t get_max_clients() const;
+  void set_max_clients(std::size_t max_clients);
 
-private: // private members
-	std::string _name;
-	std::string _key;
+  // manage topic
+  void set_topic(const std::string &topic, Client *topic_set_by);
+  const std::string &get_topic() const;
+  Client *get_topic_set_by() const;
+  const std::time_t &get_topic_set_time() const;
 
-	std::string _topic;
-	std::string _topic_set_by;
-	std::time_t _topic_set_time;
+  // public getters && setters
+  const std::string &get_name() const;
 
-	bool _mode[3];
-	int _max_clients;
+  bool operator==(const Channel &other) const;
+  bool operator!=(const Channel &other) const;
+  bool operator<(const Channel &other) const;
+  Channel &operator<<(const std::string &message);
 
-	std::set<Client *> _clients;
-	std::set<Client *> _operators;
-	std::set<Client *> _invited;
+ private:
+  const std::string _name;
+  std::string _key;
+  std::bitset<4> _mode;
+  std::size_t _max_clients;
+
+  std::string _topic;
+  Client *_topic_set_by;
+  std::time_t _topic_set_time;
+
+  std::set<Client *> _clients;
+  std::map<std::string, Client *> _clients_by_nick;
+  std::set<Client *> _operators;
+  std::map<std::string, Client *> _operators_by_nick;
+  std::set<Client *> _invited;
+  std::map<std::string, Client *> _invited_by_nick;
+
+  void add_client(Client *client);
+  void remove_client(Client *client);
+
+  // 사용 X
+  Channel();
+  Channel(__unused const Channel &src);
+  Channel &operator=(__unused const Channel &src);
 };
 
 #endif
