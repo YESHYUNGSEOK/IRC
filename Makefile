@@ -19,7 +19,6 @@ SRC	=		main.cpp \
 			Channel.cpp \
 			Client.cpp \
 			SocketStream.cpp \
-			ClientManager.cpp \
 			CommandHandler.cpp \
 			Message.cpp \
 			NumericReply.cpp

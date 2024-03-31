@@ -29,19 +29,15 @@ SocketStream::SocketStream(const int server_fd)
       _fd(accept(server_fd, reinterpret_cast<struct sockaddr *>(&_addr),
                  &_addr_len)),
       _read_buffer(),
-      _write_buffer(),
-      _raw_buffer(new char[BUFFER_SIZE]) {
+      _write_buffer() {
+  _raw_buffer[0] = '\0';
   if (_fd < 0)  // 소켓 연결 실패
-  {
-    delete[] _raw_buffer;
     throw std::runtime_error("SocketStream::SocketStream() accept() failed");
-  }
 
   unsigned int opt = 1;
   if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
       0) {  // 소켓 재사용 허용
     close(_fd);
-    delete[] _raw_buffer;
     throw std::runtime_error(
         "SocketStream::SocketStream() setsockopt() failed");
   }
@@ -50,7 +46,6 @@ SocketStream::SocketStream(const int server_fd)
   if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)  // 소켓 논블로킹 설정
   {
     close(_fd);
-    delete[] _raw_buffer;
     throw std::runtime_error("SocketStream::SocketStream() fcntl() failed");
   }
 #endif
@@ -59,16 +54,16 @@ SocketStream::SocketStream(const int server_fd)
 
 SocketStream::~SocketStream() {
   close(_fd);
-  delete[] _raw_buffer;
   std::cout << "[SocketStream] " << _fd << " disconnected" << std::endl;
 }
 
 void SocketStream::recv() {
 #ifdef __linux__  // Linux
   const ssize_t recv_len =
-      ::recv(_fd, _raw_read_buffer, BUFFER_SIZE, MSG_DONTWAIT);
+      ::recv(_fd, _raw_read_buffer, SOCKET_STREAM_BUFFER_SIZE, MSG_DONTWAIT);
 #else  // macOS
-  const ssize_t recv_len = ::recv(_fd, _raw_buffer, BUFFER_SIZE, 0);
+  const ssize_t recv_len =
+      ::recv(_fd, _raw_buffer, SOCKET_STREAM_BUFFER_SIZE, 0);
 #endif
 
   if (recv_len <= 0) {  // 0일 경우 처리 결정 필요
@@ -114,7 +109,7 @@ SocketStream &SocketStream::operator>>(std::string &data) {
   const std::string::size_type pos = _read_buffer.find("\r\n");
   if (pos == std::string::npos) {
     data = "";  // CRLF가 없으면 빈 문자열 반환
-  } else if (pos + 2 > LINE_SIZE_MAX) {
+  } else if (pos + 2 > SOCKET_STREAM_LINE_SIZE) {
     // CRLF가 있지만 메시지가 너무 길면 무시하고 예외 발생
     _read_buffer = _read_buffer.substr(pos + 2);
     throw MessageTooLongException();

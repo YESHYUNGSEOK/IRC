@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "CommandHandler.hpp"
+#include "ft_irc.hpp"
 
 class Message {
  public:
@@ -53,8 +53,14 @@ class Message {
   e_cmd get_command() const;
   const std::vector<std::string>& get_params() const;
 
+  // static methods
+  static std::vector<std::string> split_tokens(const std::string& str,
+                                               const char delim);
+
   // 파라미터 검증
   static bool is_valid_nick(const std::string& nick);
+  static bool is_valid_channel_name(const std::string& name);
+  static int is_valid_mode_flag(const std::string& flag);
 };
 
 #endif

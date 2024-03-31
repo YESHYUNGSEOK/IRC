@@ -4,16 +4,13 @@
 #include <iostream>
 #include <string>
 
-#include "Server.hpp"
 #include "ft_irc.hpp"
-
-class Server;
 
 #define CLIENT_SOURCE(client)                                      \
   ((client).get_nickname() + "!" + (client).get_username() + "@" + \
    (client).get_hostname())
 
-// define RPL_REPLIES
+// define RPL_REGISTRATION
 #define RPL_WELCOME_001(client)                                            \
   ("001 " + (client).get_nickname() + " :Welcome to the FT_IRC Network " + \
    CLIENT_SOURCE((client)) + "\r\n")
@@ -32,23 +29,19 @@ class Server;
 #define RPL_CAP_LIST(client) ("CAP " + (client).get_nickname() + " LIST :\r\n")
 #define RPL_CAP_NAK(client, params) \
   ("CAP " + (client).get_nickname() + " NAK :" + params + "\r\n")
+#define ERR_INVALIDCAPCMD_410(client, command)          \
+  ("410 " + (client).get_nickname() + " " + (command) + \
+   ":Invalid CAP command\r\n")
+
+// define PASS_REPLIES
+#define ERR_ALREADYREGISTRED_462(client) \
+  ("462 " + (client).get_nickname() + " :You may not reregister\r\n")
+#define ERR_PASSWDMISMATCH_464(client) \
+  ("464 " + (client).get_nickname() + " :Password incorrect\r\n")
 
 // define NICK_REPLIES
 #define RPL_BRDCAST_NICKCHANGE(client, old_nick) \
   (":" + (old_nick) + " NICK " + (client).get_nickname() + "\r\n")
-
-// define PING_REPLIES
-#define RPL_PONG(client, params) ("PONG :" + params + "\r\n")
-
-// define ERR_REPLIES
-#define ERR_INVALIDCAPCMD_410(client, command)          \
-  ("410 " + (client).get_nickname() + " " + (command) + \
-   ":Invalid CAP command\r\n")
-#define ERR_INPUTTOOLONG_417(client) \
-  ("417 " + (client).get_nickname() + " :Input line was too long\r\n")
-#define ERR_UNKNOWNCOMMAND_421(client, command)           \
-  (("421 ") + (client).get_nickname() + " " + (command) + \
-   " :Unknown command\r\n")
 #define ERR_NONICKNAMEGIVEN_431(client) \
   ("431 " + (client).get_nickname() + " :No nickname given\r\n")
 #define ERR_ERRONEUSNICKNAME_432(client, nickname)       \
@@ -57,14 +50,59 @@ class Server;
 #define ERR_NICKNAMEINUSE_433(client, nickname)          \
   ("433 " + (client).get_nickname() + " " + (nickname) + \
    " :Nickname is already in use\r\n")
+
+// define JOIN_REPLIES
+#define RPL_BRDCAST_JOIN(client, channel) \
+  (":" + CLIENT_SOURCE((client)) + " JOIN " + (channel).get_name() + "\r\n")
+#define RPL_NAMREPLY(client, channel, user_list)                            \
+  ("353 " + (client).get_nickname() + " = " + (channel).get_name() + " :" + \
+   (user_list) + "\r\n")
+#define RPL_ENDOFNAMES(client, channel)                            \
+  ("366 " + (client).get_nickname() + " " + (channel).get_name() + \
+   " :End of /NAMES list\r\n")
+#define RPL_DEFAULTCHANMODE(client, channel) \
+  ("324 " + (client).get_nickname() + " " + (channel).get_name() + " +\r\n")
+#define ERR_NOTONCHANNEL_442(client, channel)                      \
+  ("442 " + (client).get_nickname() + " " + (channel).get_name() + \
+   " :You're not on that channel\r\n")
+#define ERR_CHANNELISFULL_471(client, channel)                     \
+  ("471 " + (client).get_nickname() + " " + (channel).get_name() + \
+   " :Cannot join channel (+l)\r\n")
+#define ERR_INVITEONLYCHAN_473(client, channel)                    \
+  ("473 " + (client).get_nickname() + " " + (channel).get_name() + \
+   " :Cannot join channel (+i)\r\n")
+#define ERR_BADCHANNELKEY_475(client, channel)                     \
+  ("475 " + (client).get_nickname() + " " + (channel).get_name() + \
+   " :Cannot join channel (+k)\r\n")
+
+// define PART_REPLIES
+#define RPL_BRDCAST_PART(client, channel, message)                          \
+  (":" + CLIENT_SOURCE((client)) + " PART " + (channel).get_name() + " :" + \
+   (message) + "\r\n")
+
+// define PING_REPLIES
+#define RPL_PONG(client, params) ("PONG :" + params + "\r\n")
+
+// define MODE_REPLIES
+#define ERR_BADCHANMASK_476(client, channel)            \
+  ("476 " + (client).get_nickname() + " " + (channel) + \
+   " :Bad Channel Mask\r\n")
+#define ERR_UMODEUNKNOWNFLAG_501(client) \
+  ("501 " + (client).get_nickname() + " :Unknown mode flag\r\n")
+
+// define ERR_REPLIES
+#define ERR_INPUTTOOLONG_417(client) \
+  ("417 " + (client).get_nickname() + " :Input line was too long\r\n")
+#define ERR_UNKNOWNCOMMAND_421(client, command)           \
+  (("421 ") + (client).get_nickname() + " " + (command) + \
+   " :Unknown command\r\n")
+#define ERR_USERONCHANNEL_443(client, target, channel)                      \
+  ("443 " + (client).get_nickname() + " " + (target).get_nickname() + " " + \
+   (channel).get_name() + " :is already on channel\r\n")
 #define ERR_NOTREGISTERED_451(client) \
   ("451 " + (client).get_nickname() + " :You have not registered\r\n")
 #define ERR_NEEDMOREPARAMS_461(client) \
   ("461 " + (client).get_nickname() + " :Not enough parameters\r\n")
-#define ERR_ALREADYREGISTRED_462(client) \
-  ("462 " + (client).get_nickname() + " :You may not reregister\r\n")
-#define ERR_PASSWDMISMATCH_464(client) \
-  ("464 " + (client).get_nickname() + " :Password incorrect\r\n")
 
 typedef enum NUMERIC {
   // ERR
@@ -112,11 +150,11 @@ typedef enum NUMERIC {
   RPL_YOUREOPER = 381
 } e_numeric;
 
-class NumericReply {
- public:
-  static std::string getNumericReplyERR(e_numeric numeric, Server &serv);
-  static std::string getNumericReplyRPL(e_numeric numeric, Server &serv);
-};
+// class NumericReply {
+//  public:
+//   static std::string getNumericReplyERR(e_numeric numeric, Server &serv);
+//   static std::string getNumericReplyRPL(e_numeric numeric, Server &serv);
+// };
 
 #endif
 

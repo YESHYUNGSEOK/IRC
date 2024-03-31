@@ -65,12 +65,53 @@ const std::vector<std::string> &Message::get_params() const {
   return this->_params;
 }
 
+std::vector<std::string> Message::split_tokens(const std::string &str,
+                                               char delim) {
+  std::vector<std::string> tokens;
+  std::string token;
+  std::istringstream tokenStream(str);
+  while (std::getline(tokenStream, token, delim)) {
+    tokens.push_back(token);
+  }
+  return tokens;
+}
+
 // gpt로 생성된 함수라 검증이 필요함
 bool Message::is_valid_nick(const std::string &nick) {
-  if (nick.size() > NICKNAME_MAX_LEN) return false;
+  if (nick.size() > NICKLEN) return false;
   for (std::string::const_iterator it = nick.begin(); it != nick.end(); it++) {
-    if (!isalnum(*it) && *it != '-' && *it != '[' && *it != ']' && *it != '\\')
+    if (!isalnum(*it) && *it != '-' && *it != '[' && *it != ']' &&
+        *it != '\\' && *it != '_')
       return false;
   }
   return true;
+}
+
+bool Message::is_valid_channel_name(const std::string &name) {
+  if (name.size() < 2 || name.size() > CHANNELLEN) return false;
+
+  std::string::const_iterator it = name.begin();
+  if (*it != '#' && *it != '&') return false;
+  it++;
+  for (; it != name.end(); it++) {
+    if (!isalnum(*it) && *it != '-' && *it != '.' && *it != '-' && *it != '_')
+      return false;
+  }
+
+  return true;
+}
+
+int Message::is_valid_mode_flag(const std::string &flag) {
+  if (flag.size() != 2 || flag[0] != '+' || flag[0] != '-') return -1;
+  if (flag == "i")
+    return 0;
+  else if (flag == "t")
+    return 1;
+  else if (flag == "k")
+    return 2;
+  else if (flag == "o")
+    return 3;
+  else if (flag == "l")
+    return 4;
+  return -1;
 }
