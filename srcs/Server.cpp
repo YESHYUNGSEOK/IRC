@@ -25,7 +25,7 @@ Server::Server(int port, std::string password)
   // fd_set 초기화
   FD_ZERO(&_master_fds);
   FD_ZERO(&_read_fds);
-  // FD_ZERO(&_write_fds); - 해야하나?
+  FD_ZERO(&_write_fds);
 
   // 서버 소켓을 _master에 추가
   FD_SET(_server_fd, &_master_fds);
@@ -49,52 +49,90 @@ Server::Server(int port, std::string password)
 void Server::run() {
   while (true) {
     _read_fds = _master_fds;  // select()를 호출할 때마다 초기화
-    // _write_fds = _master_fds;
+    _write_fds = _master_fds;
 
-    int max_fd = _server_fd;
-    std::set<Client *>::iterator it = _clients.begin();
-    for (; it != _clients.end(); it++)
-      max_fd = std::max(max_fd, (*it)->get_fd());
+    int max_fd = _clients.empty() ? _server_fd : _clients.rbegin()->first;
 
-    const int event = select(max_fd + 1, &_read_fds, NULL, NULL, NULL);
+    const int event = select(max_fd + 1, &_read_fds, &_write_fds, NULL, NULL);
 
     if (event < 0)
       throw std::runtime_error("select() failed: " +
                                std::string(strerror(errno)));
     else if (event > 0) {
-      std::set<Client *>::iterator it = _clients.begin();
+      for (int fd = 0; fd <= max_fd; fd++) {
+        // 클라이언트 소켓에서 읽을 수 있는 데이터가 있는 경우
+        if (FD_ISSET(fd, &_read_fds)) {
+          if (fd == _server_fd) continue;
 
-      for (; it != _clients.end();) {
-        try {
-          if (FD_ISSET((*it)->get_fd(), &_read_fds))  // read event
-          {
-            read_client(*it);
-            write_client(*it);
+          std::map<int, Client *>::iterator it = _clients.find(fd);
+          if (it == _clients.end()) continue;
+
+          try {
+            read_client(it->second);
+          } catch (std::runtime_error &e) {
+            // 각종 시스템 콜 예외 - 복구 불가능
+            remove_client(it->second);
+            disconnect_client(it->second);
+            _clients_to_disconnect.pop_back();
+          } catch (SocketStream::ConnectionClosedException &e) {
+            // 클라이언트 연결 종료 예외 - 복구 불가능
+            remove_client(it->second);
+            disconnect_client(it->second);
+            _clients_to_disconnect.pop_back();
+          } catch (...) {
+            // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
+            std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
+            remove_client(it->second);
+            disconnect_client(it->second);
+            _clients_to_disconnect.pop_back();
           }
-          ++it;
+        }
+
+        // 쓰기 가능한 소켓에 대한 처리
+        if (FD_ISSET(fd, &_write_fds)) {
+          if (fd == _server_fd) continue;
+
+          std::map<int, Client *>::iterator it = _clients.find(fd);
+          if (it == _clients.end()) continue;
+
+          try {
+            write_client(it->second);
+          } catch (std::runtime_error &e) {
+            // 각종 시스템 콜 예외 - 복구 불가능
+            remove_client(it->second);
+            disconnect_client(it->second);
+            _clients_to_disconnect.pop_back();
+          } catch (SocketStream::ConnectionClosedException &e) {
+            // 클라이언트 연결 종료 예외 - 복구 불가능
+            remove_client(it->second);
+            disconnect_client(it->second);
+            _clients_to_disconnect.pop_back();
+          } catch (...) {
+            // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
+            std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
+            remove_client(it->second);
+            disconnect_client(it->second);
+            _clients_to_disconnect.pop_back();
+          }
+        }
+      }
+
+      // 연결 종료된 클라이언트 소멸
+      std::vector<Client *>::iterator it = _clients_to_disconnect.begin();
+      for (; it != _clients_to_disconnect.end(); it++) disconnect_client(*it);
+      _clients_to_disconnect.clear();
+
+      // 새로운 클라이언트 연결 수락
+      if (FD_ISSET(_server_fd, &_read_fds)) {
+        try {
+          accept_new_client();
         } catch (std::runtime_error &e) {
-          // 각종 시스템 콜 예외 - 복구 불가능
+          // 시스템 콜 예외 - 복구 불가능
           std::cerr << "Error: " << e.what() << std::endl;
-          it = remove_client(it);
-        } catch (SocketStream::ConnectionClosedException &e) {
-          // 클라이언트 연결 종료 예외 - 복구 불가능
-          std::cerr << "Error: " << e.what() << std::endl;
-          it = remove_client(it);
         } catch (...) {
           // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
           std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
-          it = remove_client(it);
         }
-      }
-      try {
-        if (FD_ISSET(_server_fd, &_read_fds))  // accept event
-          accept_new_client();
-      } catch (std::runtime_error &e) {
-        // 시스템 콜 예외 - 복구 불가능
-        std::cerr << "Error: " << e.what() << std::endl;
-      } catch (...) {
-        // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
-        std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
       }
     }
   }
@@ -103,27 +141,33 @@ void Server::run() {
 void Server::accept_new_client() {
   Client *client = new Client(_server_fd);  // 새로운 클라이언트 생성
   FD_SET(client->get_fd(),
-         &_master_fds);     // 새로운 클라이언트를 _master에 추가
-  _clients.insert(client);  // 새로운 클라이언트를 _clients에 추가
+         &_master_fds);  // 새로운 클라이언트를 _master에 추가
+  _clients[client->get_fd()] = client;
 }
 
-// 클라이언트 연결 종료
-std::set<Client *>::iterator Server::remove_client(
-    std::set<Client *>::iterator client_it) {
+void Server::remove_client(Client *client) {
   // 채널들에서 클라이언트 제거
   std::set<Channel *>::iterator it = _channels.begin();
-  for (; it != _channels.end(); it++)
-    if ((*it)->is_client_in_channel(*client_it)) (*it)->quit(*client_it);
-  // 클라이언트 이름 목록에서 제거
-  _clients_by_nick.erase((*client_it)->get_nickname());
-  // 소켓 제거
-  FD_CLR((*client_it)->get_fd(), &_master_fds);
-  // 소켓 닫기
-  delete *client_it;
-  // 클라이언트 세트에서 제거
-  std::set<Client *>::iterator next_it = _clients.erase(client_it);
+  for (; it != _channels.end(); it++) {
+    if ((*it)->is_client_in_channel(client)) (*it)->quit(client);
+    if ((*it)->empty()) {
+      delete *it;
+      _channels_by_name.erase((*it)->get_name());
+      _channels.erase(it);
+    }
+  }
+  _clients.erase(client->get_fd());
+  _clients_by_nick.erase(client->get_nickname());
+  _clients_to_disconnect.push_back(client);
+}
 
-  return next_it;
+void Server::disconnect_client(Client *client) {
+  // fd_set에서 클라이언트 제거
+  FD_CLR(client->get_fd(), &_master_fds);
+  FD_CLR(client->get_fd(), &_read_fds);
+  FD_CLR(client->get_fd(), &_write_fds);
+  // 클라이언트 소멸자 호출 - 내부 소켓 닫힘
+  delete client;
 }
 
 void Server::read_client(Client *client) {
@@ -138,7 +182,8 @@ void Server::read_client(Client *client) {
 
       if (line.length() == 0)
         break;
-      else if (line.length() == 2)
+      else if ((line.length() == 1 && line[0] == '\n') ||
+               (line.length() == 2 && line[0] == '\r' && line[1] == '\n'))
         continue;
       Message msg(line);
       switch (msg.get_command()) {
@@ -160,6 +205,9 @@ void Server::read_client(Client *client) {
         case Message::PONG:
           PONG(client, msg.get_params());
           break;
+        case Message::QUIT:
+          QUIT(client, msg.get_params());
+          break;
         case Message::JOIN:
           JOIN(client, msg.get_params());
           break;
@@ -171,6 +219,9 @@ void Server::read_client(Client *client) {
           break;
         case Message::INVITE:
           INVITE(client, msg.get_params());
+          break;
+        case Message::PRIVMSG:
+          PRIVMSG(client, msg.get_params());
           break;
         case Message::MODE:
           MODE(client, msg.get_params());
@@ -207,21 +258,24 @@ void Server::register_client(Client *client) {
   }
 }
 
-void Server::update_client_nick(Client *client, const std::string &new_nick) {
+void Server::update_nick(Client *client, const std::string &new_nick) {
   if (client->get_nickname() == new_nick) return;
+
+  // 기존 닉네임 목록에서 제거 후 새 닉네임으로 추가
   std::map<std::string, Client *>::iterator client_it =
       _clients_by_nick.find(client->get_nickname());
   if (client_it != _clients_by_nick.end()) {
     _clients_by_nick.erase(client_it);
     _clients_by_nick[new_nick] = client;
   }
-  client->set_nickname(new_nick);
-
+  // 채널 목록에서 닉네임 변경
   std::set<Channel *>::iterator channel_it = _channels.begin();
   for (; channel_it != _channels.end(); channel_it++) {
     if ((*channel_it)->is_client_in_channel(client))
       (*channel_it)->update_client_nick(client, new_nick);
   }
+
+  client->nick(new_nick);
 }
 
 Client *Server::find_client_by_nick(const std::string &nickname) {
@@ -287,12 +341,12 @@ void Server::NICK(Client *client, const std::vector<std::string> &params) {
     *client << ERR_NICKNAMEINUSE_433(*client, params[0]);
   } else if (client->is_registered()) {
     std::string old_nickname = client->get_nickname();
-    update_client_nick(client, params[0]);
+    update_nick(client, params[0]);
 
     *this << RPL_BRDCAST_NICKCHANGE(*client, old_nickname);
   } else {
-    client->set_nickname(params[0]);
-    client->set_nick_set(true);
+    update_nick(client, params[0]);
+
     register_client(client);
   }
 }
@@ -305,11 +359,7 @@ void Server::USER(Client *client, const std::vector<std::string> &params) {
   } else if (params.size() < 4) {
     *client << ERR_NEEDMOREPARAMS_461(*client);
   } else {
-    client->set_username(params[0]);
-    client->set_hostname(params[1]);  // 서버간 통신용이지만 일단 사용
-    client->set_servername(params[2]);  // 서버간 통신용이지만 일단 사용
-    client->set_realname(params[3]);
-    client->set_user_set(true);
+    client->user(params[0], params[1], params[2], params[3]);
     register_client(client);
   }
 }
@@ -328,6 +378,49 @@ void Server::PONG(Client *client, const std::vector<std::string> &params) {
   // 대충 PING 대기중인지 확인하는 코드
   // PING 대기중이면 PONG 수신 후 PING 대기중 해제
   // 아니면 PONG 수신 후 무시
+}
+
+void Server::QUIT(Client *client, const std::vector<std::string> &params) {
+  if (!client->is_registered()) {
+    *client << ERR_NOTREGISTERED_451(*client);
+  } else {
+    std::string reason = params.empty() ? "" : params[0];
+    *this << RPL_QUIT(*client, reason);
+    *client << RPL_ERROR(*client, "Closing Link: " + reason);
+  }
+}
+
+void Server::PRIVMSG(Client *client, const std::vector<std::string> &params) {
+  if (!client->is_registered()) {
+    *client << ERR_NOTREGISTERED_451(*client);
+  } else if (params.size() < 2) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
+  } else {
+    const std::vector<std::string> target_tokens =
+        Message::split_tokens(params[0], ',');
+    const std::string message = params[1];
+    std::vector<std::string>::const_iterator targetIt = target_tokens.begin();
+
+    while (targetIt != target_tokens.end()) {
+      if (Message::is_valid_channel_name(*targetIt)) {
+        std::map<std::string, Channel *>::iterator it =
+            _channels_by_name.find(*targetIt);
+
+        if (it == _channels_by_name.end())
+          *client << ERR_NOSUCHCHANNEL_403(*client, *targetIt);
+        else
+          it->second->privmsg(client, message);
+      } else {
+        Client *target = find_client_by_nick(*targetIt);
+
+        if (!target)
+          *client << ERR_NOSUCHNICK_401(*client, *targetIt);
+        else
+          *target << RPL_PRIVMSG(*client, target->get_nickname(), message);
+      }
+      targetIt++;
+    }
+  }
 }
 
 void Server::JOIN(Client *client, const std::vector<std::string> &params) {
@@ -368,10 +461,34 @@ void Server::JOIN(Client *client, const std::vector<std::string> &params) {
   }
 }
 
-// TODO: CommandHandler에서 이동
 void Server::PART(Client *client, const std::vector<std::string> &params) {
-  (void)client;
-  (void)params;
+  if (!client->is_registered()) {
+    *client << ERR_NOTREGISTERED_451(*client);
+  } else if (params.size() < 1) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
+  } else {
+    const std::vector<std::string> channel_tokens =
+        Message::split_tokens(params[0], ',');
+    const std::string reason = params.size() >= 2 ? params[1] : "";
+    std::vector<std::string>::const_iterator channelIt = channel_tokens.begin();
+
+    while (channelIt != channel_tokens.end()) {
+      std::map<std::string, Channel *>::iterator it =
+          _channels_by_name.find(*channelIt);
+
+      if (it == _channels_by_name.end())
+        *client << ERR_NOSUCHCHANNEL_403(*client, *channelIt);
+      else {
+        it->second->part(client, reason);
+        if (it->second->empty()) {
+          delete it->second;
+          _channels.erase(it->second);
+          _channels_by_name.erase(it);
+        }
+      }
+      channelIt++;
+    }
+  }
 }
 // TODO: CommandHandler에서 이동
 void Server::TOPIC(Client *client, const std::vector<std::string> &params) {
@@ -429,10 +546,10 @@ void Server::MODE(Client *client, const std::vector<std::string> &params) {
         return;
       }
       Client *targetIt = 0;
-      for (std::set<Client *>::iterator it = _clients.begin();
+      for (std::map<int, Client *>::iterator it = _clients.begin();
            it != _clients.end(); it++) {
-        if ((*it)->get_nickname() == params[2]) {
-          targetIt = *it;
+        if (it->second->get_nickname() == params[2]) {
+          targetIt = it->second;
           break;
         }
       }
@@ -466,8 +583,8 @@ void Server::MODE(Client *client, const std::vector<std::string> &params) {
 }
 
 Server &Server::operator<<(const std::string &message) {
-  std::map<std::string, Client *>::iterator it = _clients_by_nick.begin();
-  for (; it != _clients_by_nick.end(); it++) *it->second << message;
+  std::map<int, Client *>::iterator it = _clients.begin();
+  for (; it != _clients.end(); it++) *it->second << message;
   return *this;
 }
 

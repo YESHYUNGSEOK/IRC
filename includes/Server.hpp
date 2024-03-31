@@ -2,6 +2,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
+#include <algorithm>
 #include <ctime>
 #include <map>
 #include <set>
@@ -13,6 +14,7 @@
 #include "Client.hpp"
 #include "Message.hpp"
 #include "NumericReply.hpp"
+#include "Utility.hpp"
 #include "ft_irc.hpp"
 
 class Client;
@@ -26,10 +28,13 @@ class Server {
   const int _server_fd;
   fd_set _master_fds;
   fd_set _read_fds;
+  fd_set _write_fds;
   struct sockaddr_in _addr;
 
-  std::set<Client *> _clients;
+  std::map<int, Client *> _clients;
   std::map<std::string, Client *> _clients_by_nick;
+  std::vector<Client *> _clients_to_disconnect;
+
   std::set<Channel *> _channels;
   std::map<std::string, Channel *> _channels_by_name;
 
@@ -40,15 +45,15 @@ class Server {
 
   // private utils
   void accept_new_client();
-  // std::size_t remove_client(Client *client);
-  std::set<Client *>::iterator remove_client(
-      std::set<Client *>::iterator client_it);
+  // TODO: QUIT 이후에 클라이언트가 소켓을 닫는 경우와 갑작스러운 종료 구분
+  void remove_client(Client *client);
+  void disconnect_client(Client *client);
   void read_client(Client *client);
   void write_client(Client *client);
 
   // private command handlers
   void register_client(Client *client);
-  void update_client_nick(Client *client, const std::string &new_nick);
+  void update_nick(Client *client, const std::string &new_nick);
 
   // private utils
   Client *find_client_by_nick(const std::string &nickname);
@@ -61,11 +66,13 @@ class Server {
   void USER(Client *client, const std::vector<std::string> &params);
   void PING(Client *client, const std::vector<std::string> &params);
   void PONG(Client *client, const std::vector<std::string> &params);
+  void QUIT(Client *client, const std::vector<std::string> &params);
 
   void JOIN(Client *client, const std::vector<std::string> &params);
   void PART(Client *client, const std::vector<std::string> &params);
   void TOPIC(Client *client, const std::vector<std::string> &params);
   void INVITE(Client *client, const std::vector<std::string> &params);
+  void PRIVMSG(Client *client, const std::vector<std::string> &params);
 
   // MODE 명령어 처리: ongoing...
   void MODE(Client *client, const std::vector<std::string> &params);
@@ -75,6 +82,7 @@ class Server {
   ~Server();
 
   void run();
+  void run_by_map();
 
   Server &operator<<(const std::string &message);
 };
