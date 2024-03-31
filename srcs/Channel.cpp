@@ -27,7 +27,7 @@ void Channel::join(Client *client, const std::string &key = "") {
     *client << ERR_BADCHANNELKEY_475(*client, *this);
   } else if (is_mode_set(Channel::INVITE_ONLY) && !is_invited(client)) {
     *client << ERR_INVITEONLYCHAN_473(*client, *this);
-  } else if (is_channel_full()) {
+  } else if (full()) {
     *client << ERR_CHANNELISFULL_471(*client, *this);
   } else {
     add_client(client);
@@ -45,6 +45,43 @@ void Channel::part(Client *client, const std::string &message = "") {
 }
 
 void Channel::quit(Client *client) { remove_client(client); }
+
+void Channel::privmsg(Client *client, const std::string &message) {
+  std::set<Client *>::iterator it = _clients.begin();
+  for (; it != _clients.end(); ++it) {
+    if (*it != client) **it << RPL_PRIVMSG(*client, this->_name, message);
+  }
+}
+
+void Channel::op_client(Client *client, Client *target) {
+  if (!is_client_in_channel(client)) {
+    *client << ERR_NOTONCHANNEL_442(*client, *this);
+  } else if (!is_operator(client)) {
+    *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
+  } else if (!is_client_in_channel(target)) {
+    *client << ERR_USERNOTINCHANNEL_441(*client, *target, *this);
+  } else if (is_operator(target)) {
+    *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
+  } else {
+    add_operator(target);
+    *this << RPL_BRDCAST_MODE(*client, *this, "+o", target->get_nickname());
+  }
+}
+
+void Channel::deop_client(Client *client, Client *target) {
+  if (!is_client_in_channel(client)) {
+    *client << ERR_NOTONCHANNEL_442(*client, *this);
+  } else if (!is_operator(client)) {
+    *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
+  } else if (!is_client_in_channel(target)) {
+    *client << ERR_USERNOTINCHANNEL_441(*client, *target, *this);
+  } else if (!is_operator(target)) {
+    *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
+  } else {
+    remove_operator(target);
+    *this << RPL_BRDCAST_MODE(*client, *this, "-o", target->get_nickname());
+  }
+}
 
 void Channel::add_client(Client *client) {
   _clients.insert(client);
@@ -137,12 +174,13 @@ void Channel::set_mode(ModeFlag flag, bool value) { _mode.set(flag, value); }
 const std::string &Channel::get_key() const { return _key; }
 void Channel::set_key(const std::string &key) { _key = key; }
 
-bool Channel::is_channel_full() const {
+bool Channel::full() const {
   if (_mode.test(CLIENT_LIMIT_SET) == false) {
     return false;
   }
   return _max_clients <= _clients.size();
 }
+bool Channel::empty() const { return _clients.empty(); }
 std::size_t Channel::get_max_clients() const {
   if (_mode.test(CLIENT_LIMIT_SET) == false) {
     return static_cast<std::size_t>(-1);  // unlimited
