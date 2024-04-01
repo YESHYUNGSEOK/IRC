@@ -5,6 +5,7 @@ CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -pedantic -g -fsanitize=address
 
 INCLUDE_DIR = includes
 INCLUDE =	ft_irc.hpp \
+			Utility.hpp \
 			Server.hpp \
 			Channel.hpp \
 			Client.hpp \
@@ -15,6 +16,7 @@ INCLUDE =	ft_irc.hpp \
 
 SRC_DIR = srcs
 SRC	=		main.cpp \
+			Utility.cpp \
 			Server.cpp \
 			Channel.cpp \
 			Client.cpp \

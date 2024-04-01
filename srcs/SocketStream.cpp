@@ -106,17 +106,31 @@ SocketStream &SocketStream::operator<<(const std::string &data) {
   return *this;
 }
 SocketStream &SocketStream::operator>>(std::string &data) {
-  const std::string::size_type pos = _read_buffer.find("\r\n");
-  if (pos == std::string::npos) {
-    data = "";  // CRLF가 없으면 빈 문자열 반환
-  } else if (pos + 2 > SOCKET_STREAM_LINE_SIZE) {
-    // CRLF가 있지만 메시지가 너무 길면 무시하고 예외 발생
-    _read_buffer = _read_buffer.substr(pos + 2);
-    throw MessageTooLongException();
+  const std::string::size_type crlf_pos = _read_buffer.find("\r\n");
+  const std::string::size_type lf_pos = _read_buffer.find("\n");
+
+  if (crlf_pos != std::string::npos) {
+    if (crlf_pos + 2 > SOCKET_STREAM_LINE_SIZE) {
+      // CRLF가 있지만 메시지가 너무 길면 무시하고 예외 발생
+      _read_buffer = _read_buffer.substr(crlf_pos + 2);
+      throw MessageTooLongException();
+    } else {
+      // CRLF가 있고 메시지가 적절하면 반환하고 버퍼에서 삭제
+      data = _read_buffer.substr(0, crlf_pos + 2);
+      _read_buffer = _read_buffer.substr(crlf_pos + 2);
+    }
+  } else if (lf_pos != std::string::npos) {
+    if (lf_pos + 1 > SOCKET_STREAM_LINE_SIZE) {
+      // LF가 있지만 메시지가 너무 길면 무시하고 예외 발생
+      _read_buffer = _read_buffer.substr(lf_pos + 1);
+      throw MessageTooLongException();
+    } else {
+      // LF가 있고 메시지가 적절하면 반환하고 버퍼에서 삭제
+      data = _read_buffer.substr(0, lf_pos + 1);
+      _read_buffer = _read_buffer.substr(lf_pos + 1);
+    }
   } else {
-    // CRLF가 있고 메시지가 적절하면 반환하고 버퍼에서 삭제
-    data = _read_buffer.substr(0, pos + 2);
-    _read_buffer = _read_buffer.substr(pos + 2);
+    data = "";  // CRLF나 LF가 없으면 빈 문자열 반환
   }
 
   return *this;

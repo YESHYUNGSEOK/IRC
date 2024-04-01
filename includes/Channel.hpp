@@ -19,8 +19,14 @@ class Channel {
   void join(Client *client, const std::string &key);
   void part(Client *client, const std::string &message);
   void quit(Client *client);
+  // void boradcast(Client *client, const std::string &message);
+  void privmsg(Client *client, const std::string &message);
+
+  // op methods
   void op_client(Client *client, Client *target);
   void deop_client(Client *client, Client *target);
+  void set_key(Client *client, const std::string &key);
+  void set_topic(Client *client, const std::string &topic);
 
   // manage client
   bool is_client_in_channel(Client *client) const;
@@ -49,7 +55,8 @@ class Channel {
   void set_key(const std::string &key);
 
   // manage max clients
-  bool is_channel_full() const;
+  bool full() const;
+  bool empty() const;
   std::size_t get_max_clients() const;
   void set_max_clients(std::size_t max_clients);
 

@@ -51,6 +51,14 @@
   ("433 " + (client).get_nickname() + " " + (nickname) + \
    " :Nickname is already in use\r\n")
 
+// define QUIT_REPLIES
+#define RPL_QUIT(client, message) \
+  (":" + CLIENT_SOURCE((client)) + " QUIT :" + (message) + "\r\n")
+
+// define ERROR_REPLIES
+#define RPL_ERROR(client, message) \
+  (":" + CLIENT_SOURCE((client)) + " ERROR :" + (message) + "\r\n")
+
 // define JOIN_REPLIES
 #define RPL_BRDCAST_JOIN(client, channel) \
   (":" + CLIENT_SOURCE((client)) + " JOIN " + (channel).get_name() + "\r\n")
@@ -62,6 +70,12 @@
    " :End of /NAMES list\r\n")
 #define RPL_DEFAULTCHANMODE(client, channel) \
   ("324 " + (client).get_nickname() + " " + (channel).get_name() + " +\r\n")
+#define ERR_USERNOTINCHANNEL_441(client, target, channel)                   \
+  ("441 " + (client).get_nickname() + " " + (target).get_nickname() + " " + \
+   (channel).get_name() + " :They aren't on that channel\r\n")
+#define ERR_USERONCHANNEL_443(client, target, channel)                      \
+  ("443 " + (client).get_nickname() + " " + (target).get_nickname() + " " + \
+   (channel).get_name() + " :is already on channel\r\n")
 #define ERR_NOTONCHANNEL_442(client, channel)                      \
   ("442 " + (client).get_nickname() + " " + (channel).get_name() + \
    " :You're not on that channel\r\n")
@@ -74,23 +88,39 @@
 #define ERR_BADCHANNELKEY_475(client, channel)                     \
   ("475 " + (client).get_nickname() + " " + (channel).get_name() + \
    " :Cannot join channel (+k)\r\n")
+#define ERR_CHANOPRIVSNEEDED_482(client, channel)                  \
+  ("482 " + (client).get_nickname() + " " + (channel).get_name() + \
+   " :You're not channel operator\r\n")
 
 // define PART_REPLIES
 #define RPL_BRDCAST_PART(client, channel, message)                          \
   (":" + CLIENT_SOURCE((client)) + " PART " + (channel).get_name() + " :" + \
    (message) + "\r\n")
+#define ERR_NOSUCHCHANNEL_403(client, param) \
+  ("403 " + (client).get_nickname() + " " + (param) + " :No such channel\r\n")
 
 // define PING_REPLIES
 #define RPL_PONG(client, params) ("PONG :" + params + "\r\n")
 
 // define MODE_REPLIES
+#define RPL_BRDCAST_MODE(client, channel, mode, params)                    \
+  (":" + CLIENT_SOURCE((client)) + " MODE " + (channel).get_name() + " " + \
+   (mode) + " " + (params) + "\r\n")
 #define ERR_BADCHANMASK_476(client, channel)            \
   ("476 " + (client).get_nickname() + " " + (channel) + \
    " :Bad Channel Mask\r\n")
 #define ERR_UMODEUNKNOWNFLAG_501(client) \
   ("501 " + (client).get_nickname() + " :Unknown mode flag\r\n")
 
+// define PRIVMSG_REPLIES
+#define RPL_PRIVMSG(client, target, message)                                   \
+  (":" + CLIENT_SOURCE((client)) + " PRIVMSG " + (target) + " :" + (message) + \
+   "\r\n")
+
 // define ERR_REPLIES
+#define ERR_NOSUCHNICK_401(client, target)             \
+  ("401 " + (client).get_nickname() + " " + (target) + \
+   " :No such nick/channel\r\n")
 #define ERR_INPUTTOOLONG_417(client) \
   ("417 " + (client).get_nickname() + " :Input line was too long\r\n")
 #define ERR_UNKNOWNCOMMAND_421(client, command)           \

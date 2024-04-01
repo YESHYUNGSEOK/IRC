@@ -48,6 +48,20 @@ void Client::part_channel(Channel *channel) {
   }
 }
 
+void Client::nick(const std::string &nickname) {
+  _nickname = nickname;
+  _status.set(NICK_SET, true);
+}
+
+void Client::user(const std::string &username, const std::string &hostname,
+                  const std::string &servername, const std::string &realname) {
+  _username = username;
+  _hostname = hostname;
+  _servername = servername;
+  _realname = realname;
+  _status.set(USER_SET, true);
+}
+
 void Client::recv() { _stream.recv(); }
 void Client::send() { _stream.send(); }
 
@@ -57,14 +71,6 @@ const std::string &Client::get_hostname() const { return _hostname; }
 const std::string &Client::get_servername() const { return _servername; }
 const std::string &Client::get_realname() const { return _realname; }
 int Client::get_fd() const { return _stream.get_fd(); }
-
-void Client::set_nickname(const std::string &nickname) { _nickname = nickname; }
-void Client::set_username(const std::string &username) { _username = username; }
-void Client::set_hostname(const std::string &hostname) { _hostname = hostname; }
-void Client::set_servername(const std::string &servername) {
-  _servername = servername;
-}
-void Client::set_realname(const std::string &realname) { _realname = realname; }
 
 bool Client::is_cap_negotiated() const { return _status.test(CAP_NEGOTIATED); }
 bool Client::is_in_negotiation() const { return _status.test(IN_NEGOTIATION); }

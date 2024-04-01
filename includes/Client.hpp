@@ -49,6 +49,9 @@ class Client {
   ~Client();
 
   // join, part channel
+  void nick(const std::string &nickname);
+  void user(const std::string &username, const std::string &hostname,
+            const std::string &servername, const std::string &realname);
   void join_channel(Channel *channel);
   void part_channel(Channel *channel);
 
@@ -63,14 +66,6 @@ class Client {
   const std::string &get_servername() const;
   const std::string &get_realname() const;
   int get_fd() const;
-  // std::vector<Channel *> &get_channels();
-  // Channel *is_channel_operator(const std::string &channel_name);
-
-  void set_nickname(const std::string &nickname);
-  void set_username(const std::string &username);
-  void set_hostname(const std::string &hostname);
-  void set_servername(const std::string &servername);
-  void set_realname(const std::string &realname);
 
   // status bitset
   bool is_cap_negotiated() const;
