@@ -115,12 +115,9 @@ void Server::run()
           if (it == _clients.end())
             continue;
 
-          try
-          {
-            write_client(it->second);
-          }
-          catch (std::runtime_error &e)
-          {
+          try {
+            it->second->send();
+          } catch (std::runtime_error &e) {
             // 각종 시스템 콜 예외 - 복구 불가능
             remove_client(it->second);
             disconnect_client(it->second);
@@ -287,6 +284,7 @@ void Server::write_client(Client *client)
   // 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
   client->send();
 }
+
 // TODO: client 안으로 이동
 void Server::register_client(Client *client)
 {
@@ -349,15 +347,9 @@ Channel *Server::find_channel_by_name(const std::string &channel_name)
 }
 
 // TODO: client 안으로 이동
-void Server::CAP(Client *client, const std::vector<std::string> &params)
-{
-  for (std::vector<std::string>::const_iterator it = params.begin();
-       it != params.end(); it++)
-  {
-    std::cout << *it << std::endl;
-  }
-  if (params.size() == 0)
-  {
+
+void Server::CAP(Client *client, const std::vector<std::string> &params) {
+  if (params.empty()) {
     *client << ERR_NEEDMOREPARAMS_461(*client);
     return;
   }

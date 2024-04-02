@@ -320,13 +320,9 @@ void Channel::set_mode(ModeFlag flag, bool value) { _mode.set(flag, value); }
 const std::string &Channel::get_key() const { return _key; }
 void Channel::set_key(const std::string &key) { _key = key; }
 
-bool Channel::full() const
-{
-  if (_mode.test(CLIENT_LIMIT_SET) == false)
-  {
-    return false;
-  }
-  return _max_clients <= _clients.size();
+bool Channel::full() const {
+  return _mode.test(CLIENT_LIMIT_SET) && _max_clients <= _clients.size();
+
 }
 bool Channel::empty() const { return _clients.empty(); }
 std::size_t Channel::get_max_clients() const

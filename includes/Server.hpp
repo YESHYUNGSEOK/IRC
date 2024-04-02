@@ -51,7 +51,6 @@ private:
   void remove_client(Client *client);
   void disconnect_client(Client *client);
   void read_client(Client *client);
-  void write_client(Client *client);
 
   // private command handlers
   void register_client(Client *client);
