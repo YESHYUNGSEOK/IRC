@@ -490,11 +490,27 @@ void Server::PART(Client *client, const std::vector<std::string> &params) {
     }
   }
 }
-// TODO: CommandHandler에서 이동
+
 void Server::TOPIC(Client *client, const std::vector<std::string> &params) {
-  (void)client;
-  (void)params;
+  // 등록되지 않은 클라이언트: ERR_NOTREGISTERED
+  if (!client->is_registered()) {
+    *client << ERR_NOTREGISTERED_451(*client);
+    return;
+  }
+  // 파라미터 부족: ERR_NEEDMOREPARAMS
+  if (params.empty()) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
+    return;
+  }
+  // 채널이 존재하지 않음: ERR_NOSUCHCHANNEL
+  Channel *targetChannel = find_channel_by_name(params[0]);
+  if (targetChannel == NULL) {
+    *client << ERR_NOSUCHCHANNEL_403(*client, params[0]);
+    return;
+  }
+  targetChannel->topic(client, params.size() == 1 ? NULL : &params[1]);
 }
+
 // TODO: CommandHandler에서 이동
 void Server::INVITE(Client *client, const std::vector<std::string> &params) {
   (void)client;

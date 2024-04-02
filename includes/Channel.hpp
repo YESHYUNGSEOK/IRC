@@ -20,6 +20,7 @@ class Channel {
   void part(Client *client, const std::string &message);
   void quit(Client *client);
   // void boradcast(Client *client, const std::string &message);
+  void topic(Client *client, const std::string *topic);
   void privmsg(Client *client, const std::string &message);
 
   // op methods
