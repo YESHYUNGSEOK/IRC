@@ -9,6 +9,7 @@
 #define CLIENT_SOURCE(client)                                      \
   ((client).get_nickname() + "!" + (client).get_username() + "@" + \
    (client).get_hostname())
+#define SERVER_SOURCE "localhost"
 
 // define RPL_REGISTRATION
 #define RPL_WELCOME_001(client)                                            \
@@ -98,6 +99,18 @@
    (message) + "\r\n")
 #define ERR_NOSUCHCHANNEL_403(client, param) \
   ("403 " + (client).get_nickname() + " " + (param) + " :No such channel\r\n")
+
+// define TOPIC_REPLIES
+#define RPL_BRDCAST_TOPIC(client, channel, topic)                           \
+  (":" + CLIENT_SOURCE((client)) + " TOPIC " + (channel) + " :" + (topic) + \
+   "\r\n")
+#define RPL_NOTOPIC_331(channel) \
+  (":" SERVER_SOURCE " 331 " + (channel) + " :No topic is set\r\n")
+#define RPL_TOPIC_332(channel, topic) \
+  (":" SERVER_SOURCE " 332 " + (channel) + " :" + (topic) + "\r\n")
+#define ERR_TOPICTOOLONG_417(client, channel)                      \
+  ("417 " + (client).get_nickname() + " " + (channel).get_name() + \
+   " :Topic too long\r\n")
 
 // define PING_REPLIES
 #define RPL_PONG(client, params) ("PONG :" + params + "\r\n")

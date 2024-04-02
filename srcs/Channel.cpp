@@ -46,6 +46,33 @@ void Channel::part(Client *client, const std::string &message = "") {
 
 void Channel::quit(Client *client) { remove_client(client); }
 
+void Channel::topic(Client *client, const std::string *topic) {
+  if (!is_client_in_channel(client)) {
+    *client << ERR_NOTONCHANNEL_442(*client, *this);
+    return;
+  }
+
+  if (topic == NULL) {  // 조회만
+    if (_topic.empty()) {
+      *client << RPL_NOTOPIC_331(_name);
+    } else {
+      *client << RPL_TOPIC_332(_name, _topic);
+    }
+  } else {  // 변경
+    if (_mode.test(TOPIC_RESTRICTED) && !is_operator(client)) {
+      *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
+    } else {
+      // if (topic->length() > TOPICLEN) { - 굳이?
+      //   *client << ERR_INPUTTOOLONG_417(*client);
+      //   return;
+      // }
+
+      set_topic(*topic, client);
+      *this << RPL_BRDCAST_TOPIC(*client, _name, _topic);
+    }
+  }
+}
+
 void Channel::privmsg(Client *client, const std::string &message) {
   std::set<Client *>::iterator it = _clients.begin();
   for (; it != _clients.end(); ++it) {
