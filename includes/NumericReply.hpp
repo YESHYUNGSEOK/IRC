@@ -119,11 +119,17 @@
 #define RPL_BRDCAST_MODE(client, channel, mode, params)                    \
   (":" + CLIENT_SOURCE((client)) + " MODE " + (channel).get_name() + " " + \
    (mode) + " " + (params) + "\r\n")
+#define RPL_UMODEIS_221(client, mode) \
+  (":" SERVER_SOURCE " 221 " + (client) + " " + (mode) + "\r\n")
 #define ERR_BADCHANMASK_476(client, channel)            \
   ("476 " + (client).get_nickname() + " " + (channel) + \
    " :Bad Channel Mask\r\n")
 #define ERR_UMODEUNKNOWNFLAG_501(client) \
   ("501 " + (client).get_nickname() + " :Unknown mode flag\r\n")
+#define ERR_USERSDONTMATCH_502_VIEW(client) \
+  ("502 " + (client).get_nickname() + " :Can't view mode for other users\r\n")
+#define ERR_USERSDONTMATCH_502_CHANGE(client) \
+  ("502 " + (client).get_nickname() + " :Can't change mode for other users\r\n")
 
 // define PRIVMSG_REPLIES
 #define RPL_PRIVMSG(client, target, message)                                   \

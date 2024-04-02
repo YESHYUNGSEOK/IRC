@@ -48,6 +48,11 @@ void Client::part_channel(Channel *channel) {
   }
 }
 
+void Client::mode() {
+  if (_status.test(REGISTERED)) _stream << RPL_UMODEIS_221(_nickname, "+r");
+}
+void Client::mode(const std::string &param) {}
+
 void Client::nick(const std::string &nickname) {
   _nickname = nickname;
   _status.set(NICK_SET, true);

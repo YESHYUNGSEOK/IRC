@@ -55,6 +55,10 @@ class Client {
   void join_channel(Channel *channel);
   void part_channel(Channel *channel);
 
+  // mode
+  void mode();
+  void mode(const std::string &param);
+
   // 소켓 입출력
   void recv();
   void send();

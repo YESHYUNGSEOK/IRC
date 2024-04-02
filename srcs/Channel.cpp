@@ -2,7 +2,7 @@
 
 Channel::Channel(std::string name)
     : _name(name),
-      _mode(std::bitset<4>(0)),
+      _mode(std::bitset<MODE_SIZE>(0)),
       _max_clients(0),
       _topic_set_by(NULL),
       _topic_set_time(0) {}
@@ -23,7 +23,7 @@ void Channel::init(Client *host) {
 void Channel::join(Client *client, const std::string &key = "") {
   if (is_client_in_channel(client)) {
     *client << ERR_USERONCHANNEL_443(*client, *client, *this);
-  } else if (is_mode_set(Channel::NEED_KEY) && key != _key) {
+  } else if (is_mode_set(Channel::KEY) && key != _key) {
     *client << ERR_BADCHANNELKEY_475(*client, *this);
   } else if (is_mode_set(Channel::INVITE_ONLY) && !is_invited(client)) {
     *client << ERR_INVITEONLYCHAN_473(*client, *this);
@@ -59,7 +59,7 @@ void Channel::topic(Client *client, const std::string *topic) {
       *client << RPL_TOPIC_332(_name, _topic);
     }
   } else {  // 변경
-    if (_mode.test(TOPIC_RESTRICTED) && !is_operator(client)) {
+    if (_mode.test(PROTECTED_TOPIC) && !is_operator(client)) {
       *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
     } else {
       // if (topic->length() > TOPICLEN) { - 굳이?
@@ -202,17 +202,17 @@ const std::string &Channel::get_key() const { return _key; }
 void Channel::set_key(const std::string &key) { _key = key; }
 
 bool Channel::full() const {
-  return _mode.test(CLIENT_LIMIT_SET) && _max_clients <= _clients.size();
+  return _mode.test(CLIENT_LIMIT) && _max_clients <= _clients.size();
 }
 bool Channel::empty() const { return _clients.empty(); }
 std::size_t Channel::get_max_clients() const {
-  if (_mode.test(CLIENT_LIMIT_SET) == false) {
+  if (_mode.test(CLIENT_LIMIT) == false) {
     return static_cast<std::size_t>(-1);  // unlimited
   }
   return _max_clients;
 }
 void Channel::set_max_clients(std::size_t max_clients) {
-  _mode.set(CLIENT_LIMIT_SET);
+  _mode.set(CLIENT_LIMIT);
   _max_clients = max_clients;
 }
 

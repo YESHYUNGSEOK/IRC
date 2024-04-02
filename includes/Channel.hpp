@@ -13,15 +13,31 @@ class Channel {
   Channel(std::string name);
   ~Channel();
 
-  enum ModeFlag { NEED_KEY, INVITE_ONLY, TOPIC_RESTRICTED, CLIENT_LIMIT_SET };
+  enum ModeFlag {
+    CLIENT_LIMIT,
+    INVITE_ONLY,
+    KEY,
+    PROTECTED_TOPIC,
+    NO_EXTERNAL_MESSAGES,
+    MODE_SIZE
+  };
 
   void init(Client *host);
   void join(Client *client, const std::string &key);
   void part(Client *client, const std::string &message);
   void quit(Client *client);
-  // void boradcast(Client *client, const std::string &message);
+  void topic(Client *client);
   void topic(Client *client, const std::string *topic);
   void privmsg(Client *client, const std::string &message);
+  void mode(Client *client);
+  void mode(Client *client, const std::string &mode);
+
+  bool is_member(Client *client);
+  bool is_op(Client *client);
+  bool is_invited(Client *client);
+  Client *find_member(const std::string &nickname);
+  Client *find_op(const std::string &nickname);
+  Client *find_invited(const std::string &nickname);
 
   // op methods
   void op_client(Client *client, Client *target);
@@ -78,7 +94,7 @@ class Channel {
  private:
   const std::string _name;
   std::string _key;
-  std::bitset<4> _mode;
+  std::bitset<MODE_SIZE> _mode;
   std::size_t _max_clients;
 
   std::string _topic;

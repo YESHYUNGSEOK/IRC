@@ -510,84 +510,129 @@ void Server::INVITE(Client *client, const std::vector<std::string> &params) {
 }
 // TODO: Channel 안으로 이동
 void Server::MODE(Client *client, const std::vector<std::string> &params) {
-  if (params.size() < 2) {
-    // *client << ERR_NEEDMOREPARAMS_461(*client);
+  if (!client->is_registered()) {
+    *client << ERR_NOTREGISTERED_451(*client);
     return;
   }
-  Channel *targetChnl = find_channel_by_name(params[0]);
-  if (!targetChnl) {
-    *client << ERR_UMODEUNKNOWNFLAG_501(*client);
-    // *client << ERR_CHANOPRIVSNEEDED_482(*client);
+
+  if (params.empty()) {
+    *client << ERR_NEEDMOREPARAMS_461(*client);
     return;
   }
-  if (!targetChnl->is_operator(client)) {
-    // *client << ERR_NOTONCHANNEL_442(*client);
-    return;
-  }
-  switch (Message::is_valid_mode_flag(params[1])) {
-    case 0: {
-      if (params[1][0] == '+')
-        targetChnl->set_mode(Channel::INVITE_ONLY, true);
+
+  if (params[0][0] == '#' || params[0][0] == '&') {
+    Channel *targetChannel = find_channel_by_name(params[0]);
+
+    if (targetChannel) {
+      if (params.size() > 1)
+        targetChannel->mode(client, params[1]);
       else
-        targetChnl->set_mode(Channel::INVITE_ONLY, false);
-    } break;
-    case 1: {
-      if (params[1][0] == '+')
-        targetChnl->set_mode(Channel::TOPIC_RESTRICTED, true);
-      else
-        targetChnl->set_mode(Channel::TOPIC_RESTRICTED, false);
-    } break;
-    case 2: {
-      if (params[1][0] == '+') {
-        if (params.size() < 3) {
-          // *client << ERR_NEEDMOREPARAMS_461(*client);
-          return;
-        }
-        targetChnl->set_key(params[2]);
-      } else {
-        targetChnl->set_key("");
-      }
-    } break;
-    case 3: {
-      if (params.size() < 3) {
-        // *client << ERR_NEEDMOREPARAMS_461(*client);
-        return;
-      }
-      Client *targetIt = 0;
-      for (std::map<int, Client *>::iterator it = _clients.begin();
-           it != _clients.end(); it++) {
-        if (it->second->get_nickname() == params[2]) {
-          targetIt = it->second;
-          break;
-        }
-      }
-      if (!targetIt) {
-        if (params[1][0] == '+')
-          targetChnl->add_operator(targetIt);
-        else
-          targetChnl->remove_operator(targetIt);
-      }
-    } break;
-    case 4: {
-      if (params[1][0] == '+') {
-        if (params.size() < 3) {
-          // *client << ERR_NEEDMOREPARAMS_461(*client);
-          return;
-        }
-        int max_users = std::atoi(params[2].c_str());
-        if (max_users <= 0) {
-          // *client << ERR_BADCHANMASK_476(*client);
-          return;
-        }
-        targetChnl->set_max_clients(max_users);
-      } else {
-        targetChnl->set_max_clients(-1);
-      }
-    } break;
-    default:
-      // *client << ERR_UNKNOWNMODE_472(*client);
-      break;
+        targetChannel->mode(client);
+    } else
+      *client << ERR_NOSUCHCHANNEL_403(*client, params[0]);
+  } else {
   }
+
+  //   if (params.size() == 1) {
+  //     Channel *targetChannel = find_channel_by_name(params[0]);
+
+  //     if (!targetChannel)
+  //       *client << ERR_NOSUCHCHANNEL_403(*client, params[0]);
+  //     else
+  //       *client << RPL_CHANNELMODEIS_324(*client, targetChnl);
+  //   } else {
+  //     Client *targetClient = find_client_by_nick(params[0]);
+
+  //     if (targetClient) {
+  //       if (targetClient->get_nickname() == params[0])
+  //         *client << RPL_UMODEIS_221(*client, client->is_registered() ? "r" :
+  //         "");
+  //       else
+  //         *client << ERR_USERSDONTMATCH_502_VIEW(*client);
+  //     }
+  //   }
+
+  //   Channel *targetChnl = find_channel_by_name(params[0]);
+  //   if (!targetChnl) {
+  //     *client << ERR_NOSUCHCHANNEL_403(*client, params[0]);
+  //     return;
+  //   }
+  //   *client << RPL_CHANNELMODEIS_324(*client, targetChnl);
+  //   return;
+  // }
+  // Channel *targetChnl = find_channel_by_name(params[0]);
+  // if (!targetChnl) {
+  //   *client << ERR_UMODEUNKNOWNFLAG_501(*client);
+  //   // *client << ERR_CHANOPRIVSNEEDED_482(*client);
+  //   return;
+  // }
+  // if (!targetChnl->is_operator(client)) {
+  //   // *client << ERR_NOTONCHANNEL_442(*client);
+  //   return;
+  // }
+  // switch (Message::is_valid_mode_flag(params[1])) {
+  //   case 0: {
+  //     if (params[1][0] == '+')
+  //       targetChnl->set_mode(Channel::INVITE_ONLY, true);
+  //     else
+  //       targetChnl->set_mode(Channel::INVITE_ONLY, false);
+  //   } break;
+  //   case 1: {
+  //     if (params[1][0] == '+')
+  //       targetChnl->set_mode(Channel::TOPIC_RESTRICTED, true);
+  //     else
+  //       targetChnl->set_mode(Channel::TOPIC_RESTRICTED, false);
+  //   } break;
+  //   case 2: {
+  //     if (params[1][0] == '+') {
+  //       if (params.size() < 3) {
+  //         // *client << ERR_NEEDMOREPARAMS_461(*client);
+  //         return;
+  //       }
+  //       targetChnl->set_key(params[2]);
+  //     } else {
+  //       targetChnl->set_key("");
+  //     }
+  //   } break;
+  //   case 3: {
+  //     if (params.size() < 3) {
+  //       // *client << ERR_NEEDMOREPARAMS_461(*client);
+  //       return;
+  //     }
+  //     Client *targetIt = 0;
+  //     for (std::map<int, Client *>::iterator it = _clients.begin();
+  //          it != _clients.end(); it++) {
+  //       if (it->second->get_nickname() == params[2]) {
+  //         targetIt = it->second;
+  //         break;
+  //       }
+  //     }
+  //     if (!targetIt) {
+  //       if (params[1][0] == '+')
+  //         targetChnl->add_operator(targetIt);
+  //       else
+  //         targetChnl->remove_operator(targetIt);
+  //     }
+  //   } break;
+  //   case 4: {
+  //     if (params[1][0] == '+') {
+  //       if (params.size() < 3) {
+  //         // *client << ERR_NEEDMOREPARAMS_461(*client);
+  //         return;
+  //       }
+  //       int max_users = std::atoi(params[2].c_str());
+  //       if (max_users <= 0) {
+  //         // *client << ERR_BADCHANMASK_476(*client);
+  //         return;
+  //       }
+  //       targetChnl->set_max_clients(max_users);
+  //     } else {
+  //       targetChnl->set_max_clients(-1);
+  //     }
+  //   } break;
+  //   default:
+  //     // *client << ERR_UNKNOWNMODE_472(*client);
+  //     break;
 }
 
 Server &Server::operator<<(const std::string &message) {
