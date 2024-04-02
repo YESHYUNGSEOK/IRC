@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <csignal>
 
 #include "Channel.hpp"
 #include "Client.hpp"
@@ -20,8 +21,9 @@
 class Client;
 class Channel;
 
-class Server {
- private:
+class Server
+{
+private:
   const int _port;
   const std::string _password;
   std::string _created_at;
@@ -72,12 +74,13 @@ class Server {
   void PART(Client *client, const std::vector<std::string> &params);
   void TOPIC(Client *client, const std::vector<std::string> &params);
   void INVITE(Client *client, const std::vector<std::string> &params);
-  void PRIVMSG(Client *client, const std::vector<std::string> &params);
+  void KICK(Client *client, const std::vector<std::string> &params) void PRIVMSG(Client *client, const std::vector<std::string> &params);
 
   // MODE 명령어 처리: ongoing...
   void MODE(Client *client, const std::vector<std::string> &params);
 
- public:
+public:
+  static bool _is_shutdown;
   Server(int port, std::string password);
   ~Server();
 

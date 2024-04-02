@@ -8,12 +8,19 @@
 
 #include "Client.hpp"
 
-class Channel {
- public:
+class Channel
+{
+public:
   Channel(std::string name);
   ~Channel();
 
-  enum ModeFlag { NEED_KEY, INVITE_ONLY, TOPIC_RESTRICTED, CLIENT_LIMIT_SET };
+  enum ModeFlag
+  {
+    NEED_KEY,
+    INVITE_ONLY,
+    TOPIC_RESTRICTED,
+    CLIENT_LIMIT_SET
+  };
 
   void init(Client *host);
   void join(Client *client, const std::string &key);
@@ -21,6 +28,8 @@ class Channel {
   void quit(Client *client);
   // void boradcast(Client *client, const std::string &message);
   void topic(Client *client, const std::string *topic);
+  void invite(Client *client, Client *target);
+  void kick(Client *client, std::vector<std::string> target_tokens, const std::string &comment);
   void privmsg(Client *client, const std::string &message);
 
   // op methods
@@ -35,8 +44,8 @@ class Channel {
   void update_client_nick(Client *client, const std::string &new_nick);
 
   // manage operator
-  void add_operator(Client *client);  // TODO: 삭제하고 op_client로 대체
-  void remove_operator(Client *client);  // TODO: 삭제하고 deop_client로 대체
+  void add_operator(Client *client);    // TODO: 삭제하고 op_client로 대체
+  void remove_operator(Client *client); // TODO: 삭제하고 deop_client로 대체
   bool is_operator(Client *client) const;
   Client *find_operator(const std::string &nickname) const;
 
@@ -75,7 +84,7 @@ class Channel {
   bool operator<(const Channel &other) const;
   Channel &operator<<(const std::string &message);
 
- private:
+private:
   const std::string _name;
   std::string _key;
   std::bitset<4> _mode;
