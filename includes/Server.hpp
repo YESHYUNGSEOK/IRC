@@ -73,7 +73,8 @@ private:
   void PART(Client *client, const std::vector<std::string> &params);
   void TOPIC(Client *client, const std::vector<std::string> &params);
   void INVITE(Client *client, const std::vector<std::string> &params);
-  void KICK(Client *client, const std::vector<std::string> &params) void PRIVMSG(Client *client, const std::vector<std::string> &params);
+  void KICK(Client *client, const std::vector<std::string> &params);
+  void PRIVMSG(Client *client, const std::vector<std::string> &params);
 
   // MODE 명령어 처리: ongoing...
   void MODE(Client *client, const std::vector<std::string> &params);

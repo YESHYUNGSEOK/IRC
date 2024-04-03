@@ -279,11 +279,11 @@ void Server::read_client(Client *client)
   }
 }
 
-void Server::write_client(Client *client)
-{
-  // 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
-  client->send();
-}
+// void Server::write_client(Client *client)
+// {
+//   // 클라이언트의 버퍼에 있는 데이터를 소켓으로 전송
+//   client->send();
+// }
 
 // TODO: client 안으로 이동
 void Server::register_client(Client *client)
@@ -700,7 +700,7 @@ void Server::KICK(Client *client, const std::vector<std::string> &params)
   const std::vector<std::string> target_tokens =
       Message::split_tokens(params[1], ',');
   targetChannel->kick(client, target_tokens, params.size() >= 3 ? params[2] : "");
-};
+}
 
 // TODO: Channel 안으로 이동
 void Server::MODE(Client *client, const std::vector<std::string> &params)

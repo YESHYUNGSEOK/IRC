@@ -118,7 +118,7 @@ void Channel::invite(Client *client, Client *target)
     invite_client(target);
     *target << RPL_INVITING_341(*client, *target, *this);
   }
-};
+}
 
 void Channel::kick(Client *client, std::vector<std::string> target_tokens, const std::string &comment)
 {
