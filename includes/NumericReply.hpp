@@ -112,6 +112,16 @@
   ("417 " + (client).get_nickname() + " " + (channel).get_name() + \
    " :Topic too long\r\n")
 
+// define INVITE_REPLIES
+#define RPL_INVITING_341(client, target, channel)                               \
+  (":" + (client).get_nickname() + " INVITE " + (target).get_nickname() + " " + \
+   (channel).get_name() + "\r\n")
+
+// define KICK_REPLIES
+#define RPL_BRDCAST_KICK(client, channel, target, comment)                 \
+  (":" + (client).get_nickname() + " KICK " + (channel).get_name() + " " + \
+   (target).get_nickname() + " :" + (comment) + "\r\n")
+
 // define PING_REPLIES
 #define RPL_PONG(client, params) ("PONG :" + params + "\r\n")
 
@@ -147,7 +157,8 @@
 #define ERR_NEEDMOREPARAMS_461(client) \
   ("461 " + (client).get_nickname() + " :Not enough parameters\r\n")
 
-typedef enum NUMERIC {
+typedef enum NUMERIC
+{
   // ERR
   ERR_ALREADYREGISTRED = 462,
   ERR_BADCHANMASK = 476,
