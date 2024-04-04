@@ -332,7 +332,7 @@ void Server::CAP(Client *client, const std::vector<std::string> &params) {
 }
 // TODO: client 안으로 이동
 void Server::PASS(Client *client, const std::vector<std::string> &params) {
-  if (params.size() == 0) {
+  if (params.empty()) {
     *client << ERR_NEEDMOREPARAMS_461(*client);
   } else if (params[0] == _password)
     client->set_pass_confirmed(true);

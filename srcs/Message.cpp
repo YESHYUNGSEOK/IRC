@@ -32,7 +32,7 @@ Message::Message(std::string &line)
     return;
   }
 
-  while (pos != clrf_pos) {
+  while (pos <= clrf_pos) {
     pos = line.find_first_not_of(" ", pos);
     if (pos == clrf_pos) break;
 
