@@ -7,9 +7,7 @@ Server::Server(int port, std::string password)
       _password(password),
       _server_fd(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) {
   // 소켓 생성 (IPv4, TCP)
-  if (_server_fd < 0)
-    throw std::runtime_error("socket() failed: " +
-                             std::string(strerror(errno)));
+  if (_server_fd < 0) throw std::runtime_error(strerror(errno));
 
   _addr.sin_family = AF_INET;          // IPv4
   _addr.sin_addr.s_addr = INADDR_ANY;  // Listen on all interfaces
@@ -17,12 +15,11 @@ Server::Server(int port, std::string password)
 
   unsigned int opt = 1;  // 소켓 옵션 설정 - 재사용 허용
   if (setsockopt(_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-    throw std::runtime_error("setsockopt() failed: " +
-                             std::string(strerror(errno)));
+    throw std::runtime_error(strerror(errno));
 
   // 소켓 바인딩
   if (bind(_server_fd, (struct sockaddr *)&_addr, sizeof(_addr)) < 0)
-    throw std::runtime_error("bind() failed: " + std::string(strerror(errno)));
+    throw std::runtime_error(strerror(errno));
 
   // fd_set 초기화
   FD_ZERO(&_master_fds);
@@ -34,14 +31,12 @@ Server::Server(int port, std::string password)
 
 #ifdef __APPLE__                                   // macOS
   if (fcntl(_server_fd, F_SETFL, O_NONBLOCK) < 0)  // 소켓을 논블로킹으로 설정
-    throw std::runtime_error("[Server::run()]: fcntl() failed: " +
-                             std::string(strerror(errno)));
+    throw std::runtime_error(strerror(errno));
 #endif
 
   // SOMAXCONN은 시스템에서 지정한 최대 연결 요청 대기 큐의 크기
   if (listen(_server_fd, SOMAXCONN) < 0)
-    throw std::runtime_error("[Server::run()]: listen() failed: " +
-                             std::string(strerror(errno)));
+    throw std::runtime_error(strerror(errno));
 
   // 서버 생성 시간 저장
   time_t now = time(0);
@@ -60,8 +55,7 @@ void Server::run() {
     if (event < 0 && errno == EINTR)
       continue;
     else if (event < 0)  // select() 실패
-      throw std::runtime_error("select() failed: " +
-                               std::string(strerror(errno)));
+      throw std::runtime_error(strerror(errno));
 
     if (event > 0) {
       for (int fd = 0; fd <= max_fd; fd++) {
@@ -191,7 +185,7 @@ void Server::read_client(Client *client) {
     try {
       *client >> line;
 
-      if (line.length() == 0)
+      if (line.empty())
         break;
       else if ((line.length() == 1 && line[0] == '\n') ||
                (line.length() == 2 && line[0] == '\r' && line[1] == '\n'))
@@ -261,6 +255,7 @@ void Server::register_client(Client *client) {
     return;
   // PING 구현할거면 PONG 수신했는지 확인 필요
   else if (true) {
+    _clients_by_nick[client->get_nickname()] = client;
     client->set_registered(true);
     // PING(client); - 구현 할지 결정 필요
     *client << RPL_WELCOME_001(*client);
@@ -272,21 +267,20 @@ void Server::register_client(Client *client) {
 }
 
 void Server::update_nick(Client *client, const std::string &new_nick) {
+  std::cout << new_nick << std::endl;
   if (client->get_nickname() == new_nick) return;
 
   // 기존 닉네임 목록에서 제거 후 새 닉네임으로 추가
   std::map<std::string, Client *>::iterator client_it =
       _clients_by_nick.find(client->get_nickname());
-  if (client_it != _clients_by_nick.end()) {
-    _clients_by_nick.erase(client_it);
-    _clients_by_nick[new_nick] = client;
-  }
+  if (client_it != _clients_by_nick.end()) _clients_by_nick.erase(client_it);
+  if (client->is_registered()) _clients_by_nick[new_nick] = client;
+
   // 채널 목록에서 닉네임 변경
   std::set<Channel *>::iterator channel_it = _channels.begin();
-  for (; channel_it != _channels.end(); channel_it++) {
+  for (; channel_it != _channels.end(); channel_it++)
     if ((*channel_it)->is_client_in_channel(client))
       (*channel_it)->update_client_nick(client, new_nick);
-  }
 
   client->nick(new_nick);
 }
@@ -343,7 +337,7 @@ void Server::PASS(Client *client, const std::vector<std::string> &params) {
 void Server::NICK(Client *client, const std::vector<std::string> &params) {
   if (!client->is_pass_confirmed()) {
     *client << ERR_NOTREGISTERED_451(*client);
-  } else if (params.size() == 0) {
+  } else if (params.empty()) {
     *client << ERR_NONICKNAMEGIVEN_431(*client);
   } else if (!Message::is_valid_nick(params[0])) {
     *client << ERR_ERRONEUSNICKNAME_432(*client, params[0]);
@@ -375,7 +369,7 @@ void Server::USER(Client *client, const std::vector<std::string> &params) {
 }
 
 void Server::PING(Client *client, const std::vector<std::string> &params) {
-  if (params.size() == 0) {
+  if (params.empty()) {
     *client << ERR_NEEDMOREPARAMS_461(*client);
   } else {
     *client << RPL_PONG(*client, params[0]);
@@ -436,7 +430,7 @@ void Server::PRIVMSG(Client *client, const std::vector<std::string> &params) {
 void Server::JOIN(Client *client, const std::vector<std::string> &params) {
   if (!client->is_registered()) {
     *client << ERR_NOTREGISTERED_451(*client);
-  } else if (params.size() == 0) {
+  } else if (params.empty()) {
     *client << ERR_NEEDMOREPARAMS_461(*client);
   } else {
     const std::vector<std::string> channel_tokens =

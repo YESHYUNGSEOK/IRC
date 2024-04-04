@@ -32,21 +32,20 @@ SocketStream::SocketStream(const int server_fd)
       _write_buffer() {
   _raw_buffer[0] = '\0';
   if (_fd < 0)  // 소켓 연결 실패
-    throw std::runtime_error("SocketStream::SocketStream() accept() failed");
+    throw std::runtime_error(strerror(errno));
 
   unsigned int opt = 1;
   if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
       0) {  // 소켓 재사용 허용
     close(_fd);
-    throw std::runtime_error(
-        "SocketStream::SocketStream() setsockopt() failed");
+    throw std::runtime_error(strerror(errno));
   }
 
 #ifdef __APPLE__                            // macOS
   if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)  // 소켓 논블로킹 설정
   {
     close(_fd);
-    throw std::runtime_error("SocketStream::SocketStream() fcntl() failed");
+    throw std::runtime_error(strerror(errno));
   }
 #endif
   DEBUG_PRINT(_fd);
