@@ -597,52 +597,49 @@ void Server::MODE(Client *client, const std::vector<std::string> &params) {
     case 2: {
       if (params[1][0] == '+') {
         if (params.size() < 3) {
-          // *client << ERR_NEEDMOREPARAMS_461(*client);
+          *client << ERR_NEEDMOREPARAMS_461(*client);
           return;
         }
         targetChnl->set_key(params[2]);
+        targetChnl->set_mode(Channel::NEED_KEY, true);
       } else {
         targetChnl->set_key("");
+        targetChnl->set_mode(Channel::NEED_KEY, false);
       }
     } break;
     case 3: {
       if (params.size() < 3) {
-        // *client << ERR_NEEDMOREPARAMS_461(*client);
+        *client << ERR_NEEDMOREPARAMS_461(*client);
         return;
       }
-      Client *targetIt = 0;
-      for (std::map<int, Client *>::iterator it = _clients.begin();
-           it != _clients.end(); it++) {
-        if (it->second->get_nickname() == params[2]) {
-          targetIt = it->second;
-          break;
-        }
-      }
+      Client *targetIt = find_client_by_nick(params[2]);
       if (!targetIt) {
         if (params[1][0] == '+')
-          targetChnl->add_operator(targetIt);
+          targetChnl->op_client(client, targetIt);
         else
-          targetChnl->remove_operator(targetIt);
+          targetChnl->deop_client(client, targetIt);
       }
     } break;
     case 4: {
       if (params[1][0] == '+') {
         if (params.size() < 3) {
-          // *client << ERR_NEEDMOREPARAMS_461(*client);
+          *client << ERR_NEEDMOREPARAMS_461(*client);
           return;
         }
         int max_users = std::atoi(params[2].c_str());
         if (max_users <= 0) {
-          // *client << ERR_BADCHANMASK_476(*client);
+          *client << ERR_BADCHANMASK_476(*client);
           return;
         }
         targetChnl->set_max_clients(max_users);
+        targetChnl->set_mode(Channel::CLIENT_LIMIT_SET, true);
       } else {
         targetChnl->set_max_clients(-1);
+        targetChnl->set_mode(Channel::CLIENT_LIMIT_SET, false);
       }
     } break;
     default:
-      // *client << ERR_UNKNOWNMODE_472(*client);
+      *client << ERR_UNKNOWNMODE_501(*client);
       break;
   }
 }
