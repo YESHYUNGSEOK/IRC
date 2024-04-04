@@ -777,7 +777,7 @@ void Server::MODE(Client *client, const std::vector<std::string> &params)
       return;
     }
     Client *targetIt = find_client_by_nick(params[2]);
-    if (!targetIt)
+    if (targetIt)
     {
       if (params[1][0] == '+')
         targetChnl->op_client(client, targetIt);
