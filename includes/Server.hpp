@@ -3,13 +3,14 @@
 #define SERVER_HPP
 
 #include <algorithm>
+#include <cerrno>
+#include <csignal>
 #include <ctime>
 #include <map>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <csignal>
 
 #include "Channel.hpp"
 #include "Client.hpp"
@@ -21,9 +22,9 @@
 class Client;
 class Channel;
 
-class Server
-{
-private:
+class Server {
+ private:
+  static bool _sigint_accepted;
   const int _port;
   const std::string _password;
   std::string _created_at;
@@ -79,13 +80,12 @@ private:
   // MODE 명령어 처리: ongoing...
   void MODE(Client *client, const std::vector<std::string> &params);
 
-public:
-  static bool _is_shutdown;
+ public:
   Server(int port, std::string password);
   ~Server();
 
   void run();
-  void run_by_map();
+  static void signal_handler(__unused int signum);
 
   Server &operator<<(const std::string &message);
 };

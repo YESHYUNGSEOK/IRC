@@ -18,29 +18,19 @@
 #include "Server.hpp"
 #include "ft_irc.hpp"
 
-void signal_handler(int signum)
-{
-  (void)signum;
-  Server::_is_shutdown = true;
-}
-
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   (void)argc;
-  if (argc != 3)
-  {
+  if (argc != 3) {
     std::cerr << "Usage: " << argv[0] << " <port> <password>" << std::endl;
     return 1;
   }
-  try
-  {
-    signal(SIGINT, signal_handler);
+  try {
+    signal(SIGINT, Server::signal_handler);
     Server server(atoi(argv[1]), std::string(argv[2]));
     server.run();
-  }
-  catch (std::exception &e)
-  {
+  } catch (std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
+    return 1;
   }
 
   return 0;
