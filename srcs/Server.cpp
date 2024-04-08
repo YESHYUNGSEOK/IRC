@@ -268,6 +268,9 @@ void Server::read_client(Client *client)
       case Message::INVITE:
         INVITE(client, msg.get_params());
         break;
+      case Message::KICK:
+        KICK(client, msg.get_params());
+        break;
       case Message::PRIVMSG:
         PRIVMSG(client, msg.get_params());
         break;
