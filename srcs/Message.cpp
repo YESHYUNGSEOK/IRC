@@ -13,29 +13,25 @@ Message::Message(std::string &line)
     return;
   }
 
-  std::string::size_type pos = line.find_first_not_of(" \t");
+  std::string::size_type colon_pos = line.find(':');
 
-  // 공백만 있는 경우 오류
-  if (pos == std::string::npos) {
-    _command = NONE;
-    return;
-  }
+  std::stringstream line_stream(line);
+  std::string prev_param;
 
-  std::string::size_type cmd_end = line.find_first_of(" \t", pos);
-  if (cmd_end == std::string::npos) {
-    cmd_end = line.size();
-  }
+  std::getline(line_stream, prev_param, ':');
 
+  std::stringstream prev_stream(prev_param);
   std::string cmd;
-  cmd.reserve(cmd_end - pos);
+
+  std::getline(prev_stream, cmd, ' ');
 
   // 커맨드 추출 - 알파벳, 숫자로 이루어진 문자열만 추출
-  for (std::string::size_type i = 0; i < cmd_end - pos; i++) {
-    if (!std::isalnum(line[pos + i])) {
+  for (std::string::size_type i = 0; i < cmd.size(); i++) {
+    if (!std::isalnum(cmd.at(i))) {
       _command = NONE;
       return;
     }
-    cmd.push_back(std::toupper(line[pos + i]));
+    cmd[i] = std::toupper(cmd[i]);
   }
 
   // 커맨드 종류 판별
@@ -46,24 +42,23 @@ Message::Message(std::string &line)
     }
   }
 
-  // 커맨드가 잘못됐거나, 뒤에 공백이 아닌 문자가 있을 경우
+  // 커맨드가 잘못된 경우
   if (_command == NONE) {
     _params.push_back(cmd);
     return;
   }
 
-  while (pos < line.size()) {
-    std::pair<std::string, std::string::size_type> param =
-        get_first_param(line, pos);
-    if (param.first.empty()) {
-      break;
-    } else if (param.first.at(0) == ':') {
-      _params.push_back(line.substr(pos));
-      break;
-    }
-    _params.push_back(param.first);
-    pos = param.second;
-    pos = line.find_first_not_of(" \t", pos);
+  while (prev_stream) {
+    std::string param;
+    std::getline(prev_stream, param, ' ');
+    if (param.empty()) break;
+    _params.push_back(param);
+  }
+
+  if (colon_pos != std::string::npos) {
+    std::string last_param;
+    std::getline(line_stream, last_param);
+    _params.push_back(last_param);
   }
 }
 
