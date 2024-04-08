@@ -236,7 +236,10 @@ void Server::read_client(Client *client) {
           MODE(client, msg.get_params());
           break;
         default:
-          *client << ERR_UNKNOWNCOMMAND_421(*client, msg.get_params()[0]);
+          if (msg.get_params().empty())
+            *client << ERR_UNKNOWNCOMMAND_421(*client, "mol-lu");
+          else
+            *client << ERR_UNKNOWNCOMMAND_421(*client, msg.get_params()[0]);
           break;
       }
     } catch (SocketStream::MessageTooLongException &e) {
