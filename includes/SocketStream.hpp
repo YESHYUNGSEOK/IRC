@@ -17,6 +17,9 @@
 
 class SocketStream {
  private:
+  static const std::string _crlf;
+  static const std::string _lf;
+
   struct sockaddr_in _addr;
   socklen_t _addr_len;
   const int _fd;

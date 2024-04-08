@@ -1,5 +1,8 @@
 #include "SocketStream.hpp"
 
+const std::string SocketStream::_crlf = "\r\n";
+const std::string SocketStream::_lf = "\n";
+
 // 사용하지 않는 생성자
 SocketStream::SocketStream() : _fd(0) {
   DEBUG();
@@ -105,8 +108,7 @@ SocketStream &SocketStream::operator<<(const std::string &data) {
   return *this;
 }
 SocketStream &SocketStream::operator>>(std::string &data) {
-  const std::string::size_type crlf_pos = _read_buffer.find("\r\n");
-  const std::string::size_type lf_pos = _read_buffer.find("\n");
+  const std::string::size_type crlf_pos = _read_buffer.find(_crlf);
 
   if (crlf_pos != std::string::npos) {
     if (crlf_pos + 2 > SOCKET_STREAM_LINE_SIZE) {
@@ -114,23 +116,30 @@ SocketStream &SocketStream::operator>>(std::string &data) {
       _read_buffer = _read_buffer.substr(crlf_pos + 2);
       throw MessageTooLongException();
     } else {
-      // CRLF가 있고 메시지가 적절하면 반환하고 버퍼에서 삭제
-      data = _read_buffer.substr(0, crlf_pos + 2);
+      // CRLF가 있고 길이가 적절하면 반환하고 버퍼에서 삭제
+      data = _read_buffer.substr(0, crlf_pos);
       _read_buffer = _read_buffer.substr(crlf_pos + 2);
+      return *this;
     }
-  } else if (lf_pos != std::string::npos) {
+  }
+
+  // IRC 프로토콜에는 맞지 않지만 nc로 테스트할 때 필요
+  const std::string::size_type lf_pos = _read_buffer.find(_lf);
+
+  if (lf_pos != std::string::npos) {
     if (lf_pos + 1 > SOCKET_STREAM_LINE_SIZE) {
       // LF가 있지만 메시지가 너무 길면 무시하고 예외 발생
       _read_buffer = _read_buffer.substr(lf_pos + 1);
       throw MessageTooLongException();
     } else {
       // LF가 있고 메시지가 적절하면 반환하고 버퍼에서 삭제
-      data = _read_buffer.substr(0, lf_pos + 1);
+      data = _read_buffer.substr(0, lf_pos);
       _read_buffer = _read_buffer.substr(lf_pos + 1);
+      return *this;
     }
-  } else {
-    data = "";  // CRLF나 LF가 없으면 빈 문자열 반환
   }
+
+  data.clear();  // CRLF나 LF가 없으면 빈 문자열 반환
 
   return *this;
 }

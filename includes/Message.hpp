@@ -58,6 +58,8 @@ class Message {
                                                const char delim);
 
   // 파라미터 검증
+  static std::pair<std::string, std::string::size_type> get_first_param(
+      const std::string& str, const std::string::size_type pos);
   static bool is_valid_nick(const std::string& nick);
   static bool is_valid_channel_name(const std::string& name);
   static int is_valid_mode_flag(const std::string& flag);
