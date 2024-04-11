@@ -351,8 +351,16 @@ void Server::QUIT(Client *client, const std::vector<std::string> &params) {
     *client << ERR_NOTREGISTERED_451(*client);
   } else {
     std::string reason = params.empty() ? "" : params[0];
-    *this << RPL_QUIT(*client, reason);
+
+    std::set<Channel *>::iterator it = _channels.begin();
+    for (; it != _channels.end(); it++) {
+      if ((*it)->is_client_in_channel(client)) {
+        (*it)->operator<<(RPL_QUIT(*client, reason));
+        (*it)->quit(client);
+      }
+    }
     *client << RPL_ERROR("Closing Link: " + reason);
+    remove_client(client);
   }
 }
 
