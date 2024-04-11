@@ -59,66 +59,41 @@ void Server::run() {
 
     if (event > 0) {
       for (int fd = 0; fd <= max_fd; fd++) {
-        // 클라이언트 소켓에서 읽을 수 있는 데이터가 있는 경우
-        if (FD_ISSET(fd, &_read_fds)) {
-          if (fd == _server_fd) continue;
+        try {
+          if (FD_ISSET(fd, &_read_fds)) {
+            // 읽기 가능한 소켓에 대한 처리
+            if (fd == _server_fd) continue;
 
-          std::map<int, Client *>::iterator it = _clients.find(fd);
-          if (it == _clients.end()) continue;
+            std::map<int, Client *>::iterator it = _clients.find(fd);
+            if (it == _clients.end()) continue;
 
-          try {
-            read_client(it->second);
-          } catch (std::runtime_error &e) {
-            // 각종 시스템 콜 예외 - 복구 불가능
-            Client *error_client = it->second;
-            remove_client(error_client);
-            disconnect_client(error_client);
-            _clients_to_disconnect.pop_back();
-            continue;
-          } catch (SocketStream::ConnectionClosedException &e) {
-            // 클라이언트 연결 종료 예외 - 복구 불가능
-            Client *error_client = it->second;
-            remove_client(error_client);
-            disconnect_client(error_client);
-            _clients_to_disconnect.pop_back();
-            continue;
-          } catch (...) {
-            // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
-            std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
-            Client *error_client = it->second;
-            remove_client(error_client);
-            disconnect_client(error_client);
-            _clients_to_disconnect.pop_back();
-            continue;
+            it->second->recv();  // 클라이언트로부터 데이터를 읽어들임
+            read_client(it->second);  // 파싱 및 처리
           }
-        }
 
-        // 쓰기 가능한 소켓에 대한 처리
-        if (FD_ISSET(fd, &_write_fds)) {
-          if (fd == _server_fd) continue;
+          if (FD_ISSET(fd, &_write_fds)) {
+            // 쓰기 가능한 소켓에 대한 처리
+            if (fd == _server_fd) continue;
 
-          std::map<int, Client *>::iterator it = _clients.find(fd);
-          if (it == _clients.end()) continue;
+            std::map<int, Client *>::iterator it = _clients.find(fd);
+            if (it == _clients.end()) continue;
 
-          try {
-            it->second->send();
-          } catch (std::runtime_error &e) {
-            // 각종 시스템 콜 예외 - 복구 불가능
-            remove_client(it->second);
-            disconnect_client(it->second);
-            _clients_to_disconnect.pop_back();
-          } catch (SocketStream::ConnectionClosedException &e) {
-            // 클라이언트 연결 종료 예외 - 복구 불가능
-            remove_client(it->second);
-            disconnect_client(it->second);
-            _clients_to_disconnect.pop_back();
-          } catch (...) {
-            // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
-            std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
-            remove_client(it->second);
-            disconnect_client(it->second);
-            _clients_to_disconnect.pop_back();
+            it->second->send();  // 클라이언트로 데이터를 전송
           }
+        } catch (std::runtime_error &e) {
+          // 각종 시스템 콜 예외 - 복구 불가능
+          Client *error_client = _clients.find(fd)->second;
+          remove_client(error_client);
+          disconnect_client(error_client);
+          _clients_to_disconnect.pop_back();
+          continue;
+        } catch (SocketStream::ConnectionClosedException &e) {
+          // 클라이언트 연결 종료 예외 - 복구 불가능
+          Client *error_client = _clients.find(fd)->second;
+          remove_client(error_client);
+          disconnect_client(error_client);
+          _clients_to_disconnect.pop_back();
+          continue;
         }
       }
 
@@ -134,9 +109,6 @@ void Server::run() {
         } catch (std::runtime_error &e) {
           // 시스템 콜 예외 - 복구 불가능
           std::cerr << "Error: " << e.what() << std::endl;
-        } catch (...) {
-          // 그 외 예외 - 일단 에러 메시지 출력 후 연결 종료
-          std::cerr << "Unkown Error: " << strerror(errno) << std::endl;
         }
       }
     }
@@ -153,12 +125,15 @@ void Server::accept_new_client() {
 void Server::remove_client(Client *client) {
   // 채널들에서 클라이언트 제거
   std::set<Channel *>::iterator it = _channels.begin();
-  for (; it != _channels.end(); it++) {
+  for (; it != _channels.end();) {
     if ((*it)->is_client_in_channel(client)) (*it)->quit(client);
     if ((*it)->empty()) {
-      _channels_by_name.erase((*it)->get_name());
-      _channels.erase(it);
-      delete *it;
+      const Channel *target = *it;
+      _channels_by_name.erase(target->get_name());
+      it = _channels.erase(it);
+      delete target;
+    } else {
+      it++;
     }
   }
   _clients.erase(client->get_fd());
@@ -177,7 +152,6 @@ void Server::disconnect_client(Client *client) {
 
 void Server::read_client(Client *client) {
   // 클라이언트 내부의 소켓으로부터 데이터를 버퍼로 읽어들임
-  client->recv();
 
   std::string line;
 
@@ -185,13 +159,10 @@ void Server::read_client(Client *client) {
     try {
       *client >> line;
 
-      if (line.empty()) break;
+      if (line.empty()) continue;  // clrf만 있는 경우 다음 줄로 넘어감
+
       Message msg(line);
 
-      for (std::vector<std::string>::const_iterator it =
-               msg.get_params().begin();
-           it != msg.get_params().end(); it++)
-        std::cout << '[' << *it << ']' << std::endl;
       switch (msg.get_command()) {
         case Message::CAP:
           CAP(client, msg.get_params());
@@ -207,9 +178,6 @@ void Server::read_client(Client *client) {
           break;
         case Message::PING:
           PING(client, msg.get_params());
-          break;
-        case Message::PONG:
-          PONG(client, msg.get_params());
           break;
         case Message::QUIT:
           QUIT(client, msg.get_params());
@@ -237,13 +205,15 @@ void Server::read_client(Client *client) {
           break;
         default:
           if (msg.get_params().empty())
-            *client << ERR_UNKNOWNCOMMAND_421(*client, "mol-lu");
+            *client << ERR_UNKNOWNCOMMAND_421(*client, "");
           else
             *client << ERR_UNKNOWNCOMMAND_421(*client, msg.get_params()[0]);
           break;
       }
     } catch (SocketStream::MessageTooLongException &e) {
       *client << ERR_INPUTTOOLONG_417(*client);
+    } catch (SocketStream::NoCRLFException &e) {
+      break;
     }
   }
 }
@@ -300,7 +270,6 @@ Channel *Server::find_channel_by_name(const std::string &channel_name) {
 }
 
 // TODO: client 안으로 이동
-
 void Server::CAP(Client *client, const std::vector<std::string> &params) {
   if (params.empty()) {
     *client << ERR_NEEDMOREPARAMS_461(*client);
@@ -377,21 +346,13 @@ void Server::PING(Client *client, const std::vector<std::string> &params) {
   }
 }
 
-void Server::PONG(Client *client, const std::vector<std::string> &params) {
-  (void)client;
-  (void)params;
-  // 대충 PING 대기중인지 확인하는 코드
-  // PING 대기중이면 PONG 수신 후 PING 대기중 해제
-  // 아니면 PONG 수신 후 무시
-}
-
 void Server::QUIT(Client *client, const std::vector<std::string> &params) {
   if (!client->is_registered()) {
     *client << ERR_NOTREGISTERED_451(*client);
   } else {
     std::string reason = params.empty() ? "" : params[0];
     *this << RPL_QUIT(*client, reason);
-    *client << RPL_ERROR(*client, "Closing Link: " + reason);
+    *client << RPL_ERROR("Closing Link: " + reason);
   }
 }
 

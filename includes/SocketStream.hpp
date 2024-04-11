@@ -54,6 +54,14 @@ class SocketStream {
     virtual ~ConnectionClosedException() throw();
     virtual const char *what() const throw();
   };
+  class NoCRLFException : public std::exception {
+   public:
+    NoCRLFException();
+    NoCRLFException(__unused const NoCRLFException &src);
+    NoCRLFException &operator=(__unused const NoCRLFException &src);
+    virtual ~NoCRLFException() throw();
+    virtual const char *what() const throw();
+  };
   class MessageTooLongException : public std::exception {
    public:
     MessageTooLongException();

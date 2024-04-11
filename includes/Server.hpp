@@ -16,7 +16,6 @@
 #include "Client.hpp"
 #include "Message.hpp"
 #include "NumericReply.hpp"
-#include "Utility.hpp"
 #include "ft_irc.hpp"
 
 class Client;

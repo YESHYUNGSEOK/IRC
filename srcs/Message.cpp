@@ -1,9 +1,15 @@
 #include "Message.hpp"
 
-const std::string Message::_command_arr[22] = {
-    "NONE", "CAP",   "PASS",   "NICK",  "USER", "OPER",   "QUIT", "JOIN",
-    "PART", "TOPIC", "MODE",   "NAMES", "LIST", "INVITE", "KICK", "PRIVMSG",
-    "WHO",  "WHOIS", "WHOWAS", "KILL",  "PING", "PONG"};
+const std::string Message::_command_arr[Message::CMD_SIZE + 1] = {
+    "NONE", "CAP", "PASS", "NICK", "USER",
+    // "OPER",
+    "QUIT", "JOIN", "PART", "TOPIC", "MODE",
+    //  "NAMES", "LIST",
+    "INVITE", "KICK", "PRIVMSG",
+    // "WHO", "WHOIS", "WHOWAS", "KILL",
+    "PING",
+    // "PONG"
+};
 
 Message::Message(std::string &line)
     : _command(NONE), _params(std::vector<std::string>()) {
@@ -35,7 +41,7 @@ Message::Message(std::string &line)
   }
 
   // 커맨드 종류 판별
-  for (int i = 1; i < 22; i++) {
+  for (int i = 1; i < Message::CMD_SIZE; i++) {
     if (cmd == _command_arr[i]) {
       _command = static_cast<e_cmd>(i);
       break;
@@ -100,9 +106,7 @@ std::pair<std::string, std::string::size_type> Message::get_first_param(
 bool Message::is_valid_nick(const std::string &nick) {
   if (nick.size() > NICKLEN) return false;
   for (std::string::const_iterator it = nick.begin(); it != nick.end(); it++) {
-    if (!isalnum(*it) && *it != '-' && *it != '[' && *it != ']' &&
-        *it != '\\' && *it != '_')
-      return false;
+    if (!isalnum(*it) && *it != '-' && *it != '_') return false;
   }
   return true;
 }
@@ -114,8 +118,7 @@ bool Message::is_valid_channel_name(const std::string &name) {
   if (*it != '#' && *it != '&') return false;
   it++;
   for (; it != name.end(); it++) {
-    if (!isalnum(*it) && *it != '-' && *it != '.' && *it != '-' && *it != '_')
-      return false;
+    if (!isalnum(*it) && *it != '-' && *it != '_') return false;
   }
 
   return true;
@@ -136,14 +139,6 @@ int Message::is_valid_mode_flag(const std::string &flag) {
   else if (flag[1] == 'l')
     return 4;
   return -1;
-}
-
-std::istream &operator>>(std::istream &is, Message &msg) {
-  std::string line;
-
-  std::getline(is, line, ' ');
-  msg = Message(line);
-  return is;
 }
 
 // Path: srcs/Message.cpp

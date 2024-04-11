@@ -121,25 +121,11 @@ SocketStream &SocketStream::operator>>(std::string &data) {
       _read_buffer = _read_buffer.substr(crlf_pos + 2);
       return *this;
     }
+  } else {
+    data.clear();
+    throw NoCRLFException();
+    // CRLF나 LF가 없으면 예외 발생
   }
-
-  // IRC 프로토콜에는 맞지 않지만 nc로 테스트할 때 필요
-  const std::string::size_type lf_pos = _read_buffer.find(_lf);
-
-  if (lf_pos != std::string::npos) {
-    if (lf_pos + 1 > SOCKET_STREAM_LINE_SIZE) {
-      // LF가 있지만 메시지가 너무 길면 무시하고 예외 발생
-      _read_buffer = _read_buffer.substr(lf_pos + 1);
-      throw MessageTooLongException();
-    } else {
-      // LF가 있고 메시지가 적절하면 반환하고 버퍼에서 삭제
-      data = _read_buffer.substr(0, lf_pos);
-      _read_buffer = _read_buffer.substr(lf_pos + 1);
-      return *this;
-    }
-  }
-
-  data.clear();  // CRLF나 LF가 없으면 빈 문자열 반환
 
   return *this;
 }
@@ -155,6 +141,18 @@ SocketStream::ConnectionClosedException::operator=(
 SocketStream::ConnectionClosedException::~ConnectionClosedException() throw() {}
 const char *SocketStream::ConnectionClosedException::what() const throw() {
   return "Connection closed";
+}
+
+SocketStream::NoCRLFException::NoCRLFException() {}
+SocketStream::NoCRLFException::NoCRLFException(
+    __unused const NoCRLFException &src) {}
+SocketStream::NoCRLFException &SocketStream::NoCRLFException::operator=(
+    __unused const NoCRLFException &src) {
+  return *this;
+}
+SocketStream::NoCRLFException::~NoCRLFException() throw() {}
+const char *SocketStream::NoCRLFException::what() const throw() {
+  return "IRC protocol violation: no CRLF";
 }
 
 SocketStream::MessageTooLongException::MessageTooLongException() {}

@@ -17,27 +17,28 @@ class Message {
     PASS,
     NICK,
     USER,
-    OPER,
+    // OPER,
     QUIT,
     JOIN,
     PART,
     TOPIC,
     MODE,
-    NAMES,
-    LIST,
+    // NAMES,
+    // LIST,
     INVITE,
     KICK,
     PRIVMSG,
-    WHO,
-    WHOIS,
-    WHOWAS,
-    KILL,
+    // WHO,
+    // WHOIS,
+    // WHOWAS,
+    // KILL,
     PING,
-    PONG  // 21
+    // PONG  // 21
+    CMD_SIZE
   } e_cmd;
 
  private:
-  static const std::string _command_arr[22];
+  static const std::string _command_arr[CMD_SIZE + 1];
 
   e_cmd _command;
   std::vector<std::string> _params;

@@ -8,8 +8,7 @@ Channel::Channel(std::string name)
       _topic_set_time(0) {}
 Channel::~Channel() {}
 
-void Channel::init(Client *host)
-{
+void Channel::init(Client *host) {
   _clients.insert(host);
   _clients_by_nick[host->get_nickname()] = host;
   _operators.insert(host);
@@ -21,38 +20,24 @@ void Channel::init(Client *host)
   *host << RPL_ENDOFNAMES(*host, *this);
 }
 
-void Channel::join(Client *client, const std::string &key = "")
-{
-  if (is_client_in_channel(client))
-  {
+void Channel::join(Client *client, const std::string &key = "") {
+  if (is_client_in_channel(client)) {
     *client << ERR_USERONCHANNEL_443(*client, *client, *this);
-  }
-  else if (is_mode_set(Channel::NEED_KEY) && key != _key)
-  {
+  } else if (is_mode_set(Channel::NEED_KEY) && key != _key) {
     *client << ERR_BADCHANNELKEY_475(*client, *this);
-  }
-  else if (is_mode_set(Channel::INVITE_ONLY) && !is_invited(client))
-  {
+  } else if (is_mode_set(Channel::INVITE_ONLY) && !is_invited(client)) {
     *client << ERR_INVITEONLYCHAN_473(*client, *this);
-  }
-  else if (full())
-  {
+  } else if (full()) {
     *client << ERR_CHANNELISFULL_471(*client, *this);
-  }
-  else
-  {
+  } else {
     add_client(client);
   }
 }
 
-void Channel::part(Client *client, const std::string &message = "")
-{
-  if (!is_client_in_channel(client))
-  {
+void Channel::part(Client *client, const std::string &message = "") {
+  if (!is_client_in_channel(client)) {
     *client << ERR_NOTONCHANNEL_442(*client, *this);
-  }
-  else
-  {
+  } else {
     remove_client(client);
     *client << RPL_BRDCAST_PART(*client, *this, message);
     *this << RPL_BRDCAST_PART(*client, *this, message);
@@ -61,33 +46,22 @@ void Channel::part(Client *client, const std::string &message = "")
 
 void Channel::quit(Client *client) { remove_client(client); }
 
-void Channel::topic(Client *client, const std::string *topic)
-{
-  if (!is_client_in_channel(client))
-  {
+void Channel::topic(Client *client, const std::string *topic) {
+  if (!is_client_in_channel(client)) {
     *client << ERR_NOTONCHANNEL_442(*client, *this);
     return;
   }
 
-  if (topic == NULL)
-  { // 조회만
-    if (_topic.empty())
-    {
+  if (topic == NULL) {  // 조회만
+    if (_topic.empty()) {
       *client << RPL_NOTOPIC_331(_name);
-    }
-    else
-    {
+    } else {
       *client << RPL_TOPIC_332(_name, _topic);
     }
-  }
-  else
-  { // 변경
-    if (_mode.test(TOPIC_RESTRICTED) && !is_operator(client))
-    {
+  } else {  // 변경
+    if (_mode.test(TOPIC_RESTRICTED) && !is_operator(client)) {
       *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
-    }
-    else
-    {
+    } else {
       // if (topic->length() > TOPICLEN) { - 굳이?
       //   *client << ERR_INPUTTOOLONG_417(*client);
       //   return;
@@ -99,50 +73,35 @@ void Channel::topic(Client *client, const std::string *topic)
   }
 }
 
-void Channel::invite(Client *client, Client *target)
-{
-  if (!is_client_in_channel(client))
-  {
+void Channel::invite(Client *client, Client *target) {
+  if (!is_client_in_channel(client)) {
     *client << ERR_NOTONCHANNEL_442(*client, *this);
-  }
-  else if (!is_operator(client) || is_mode_set(INVITE_ONLY))
-  {
+  } else if (!is_operator(client) || is_mode_set(INVITE_ONLY)) {
     *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
-  }
-  else if (is_client_in_channel(target))
-  {
+  } else if (is_client_in_channel(target)) {
     *client << ERR_USERONCHANNEL_443(*client, *target, *this);
-  }
-  else
-  {
+  } else {
     invite_client(target);
     *target << RPL_INVITING_341(*client, *target, *this);
   }
 }
 
-void Channel::kick(Client *client, std::vector<std::string> target_tokens, const std::string &comment)
-{
-  if (!is_client_in_channel(client))
-  {
+void Channel::kick(Client *client, std::vector<std::string> target_tokens,
+                   const std::string &comment) {
+  if (!is_client_in_channel(client)) {
     *client << ERR_NOTONCHANNEL_442(*client, *this);
     return;
-  }
-  else if (!is_operator(client))
-  {
+  } else if (!is_operator(client)) {
     *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
     return;
   }
 
   std::vector<std::string>::iterator it = target_tokens.begin();
-  for (; it != target_tokens.end(); ++it)
-  {
+  for (; it != target_tokens.end(); ++it) {
     Client *target = find_client(*it);
-    if (target == NULL)
-    {
+    if (target == NULL) {
       *client << ERR_USERNOTINCHANNEL_441(*client, *target, *this);
-    }
-    else
-    {
+    } else {
       // default 코멘트
       std::string _comment = comment == "" ? "Default" : comment;
       *this << RPL_BRDCAST_KICK(*client, *this, *target, _comment);
@@ -152,68 +111,44 @@ void Channel::kick(Client *client, std::vector<std::string> target_tokens, const
   }
 }
 
-void Channel::privmsg(Client *client, const std::string &message)
-{
+void Channel::privmsg(Client *client, const std::string &message) {
   std::set<Client *>::iterator it = _clients.begin();
-  for (; it != _clients.end(); ++it)
-  {
-    if (*it != client)
-      **it << RPL_PRIVMSG(*client, this->_name, message);
+  for (; it != _clients.end(); ++it) {
+    if (*it != client) **it << RPL_PRIVMSG(*client, this->_name, message);
   }
 }
 
-void Channel::op_client(Client *client, Client *target)
-{
-  if (!is_client_in_channel(client))
-  {
+void Channel::op_client(Client *client, Client *target) {
+  if (!is_client_in_channel(client)) {
     *client << ERR_NOTONCHANNEL_442(*client, *this);
-  }
-  else if (!is_operator(client))
-  {
+  } else if (!is_operator(client)) {
     *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
-  }
-  else if (!is_client_in_channel(target))
-  {
+  } else if (!is_client_in_channel(target)) {
     *client << ERR_USERNOTINCHANNEL_441(*client, *target, *this);
-  }
-  else if (is_operator(target))
-  {
+  } else if (is_operator(target)) {
     *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
-  }
-  else
-  {
+  } else {
     add_operator(target);
     *this << RPL_BRDCAST_MODE(*client, *this, "+o", target->get_nickname());
   }
 }
 
-void Channel::deop_client(Client *client, Client *target)
-{
-  if (!is_client_in_channel(client))
-  {
+void Channel::deop_client(Client *client, Client *target) {
+  if (!is_client_in_channel(client)) {
     *client << ERR_NOTONCHANNEL_442(*client, *this);
-  }
-  else if (!is_operator(client))
-  {
+  } else if (!is_operator(client)) {
     *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
-  }
-  else if (!is_client_in_channel(target))
-  {
+  } else if (!is_client_in_channel(target)) {
     *client << ERR_USERNOTINCHANNEL_441(*client, *target, *this);
-  }
-  else if (!is_operator(target))
-  {
+  } else if (!is_operator(target)) {
     *client << ERR_CHANOPRIVSNEEDED_482(*client, *this);
-  }
-  else
-  {
+  } else {
     remove_operator(target);
     *this << RPL_BRDCAST_MODE(*client, *this, "-o", target->get_nickname());
   }
 }
 
-void Channel::add_client(Client *client)
-{
+void Channel::add_client(Client *client) {
   _clients.insert(client);
   _clients_by_nick[client->get_nickname()] = client;
   _invited.erase(client);
@@ -223,8 +158,7 @@ void Channel::add_client(Client *client)
   std::string user_list;
 
   std::set<Client *>::iterator it = _clients.begin();
-  for (; it != _clients.end(); ++it)
-  {
+  for (; it != _clients.end(); ++it) {
     if (_operators.find(*it) != _operators.end())
       user_list += "@" + (*it)->get_nickname();
     else
@@ -236,8 +170,7 @@ void Channel::add_client(Client *client)
   *client << RPL_NAMREPLY(*client, *this, user_list);
   *client << RPL_ENDOFNAMES(*client, *this);
 }
-void Channel::remove_client(Client *client)
-{
+void Channel::remove_client(Client *client) {
   _clients.erase(client);
   _clients_by_nick.erase(client->get_nickname());
   _operators.erase(client);
@@ -246,71 +179,57 @@ void Channel::remove_client(Client *client)
   _invited_by_nick.erase(client->get_nickname());
   client->part_channel(this);
 }
-bool Channel::is_client_in_channel(Client *client) const
-{
+bool Channel::is_client_in_channel(Client *client) const {
   return _clients.find(client) != _clients.end();
 }
-Client *Channel::find_client(const std::string &nickname) const
-{
+Client *Channel::find_client(const std::string &nickname) const {
   std::map<std::string, Client *>::const_iterator it =
       _clients_by_nick.find(nickname);
 
-  if (it == _clients_by_nick.end())
-    return NULL;
+  if (it == _clients_by_nick.end()) return NULL;
   return it->second;
 }
-void Channel::update_client_nick(Client *client, const std::string &new_nick)
-{
+void Channel::update_client_nick(Client *client, const std::string &new_nick) {
   _clients_by_nick.erase(client->get_nickname());
   _clients_by_nick[new_nick] = client;
 }
 
-void Channel::add_operator(Client *client)
-{
+void Channel::add_operator(Client *client) {
   _operators_by_nick[client->get_nickname()] = client;
   _operators.insert(client);
 }
-void Channel::remove_operator(Client *client)
-{
+void Channel::remove_operator(Client *client) {
   _operators_by_nick.erase(client->get_nickname());
   _operators.erase(client);
 }
-bool Channel::is_operator(Client *client) const
-{
+bool Channel::is_operator(Client *client) const {
   return _operators.find(client) != _operators.end();
 }
-Client *Channel::find_operator(const std::string &nickname) const
-{
+Client *Channel::find_operator(const std::string &nickname) const {
   std::map<std::string, Client *>::const_iterator it =
       _operators_by_nick.find(nickname);
 
-  if (it == _operators_by_nick.end())
-    return NULL;
+  if (it == _operators_by_nick.end()) return NULL;
   return it->second;
 }
 
 const std::set<Client *> &Channel::get_invited() const { return _invited; }
-void Channel::invite_client(Client *client)
-{
+void Channel::invite_client(Client *client) {
   _invited_by_nick[client->get_nickname()] = client;
   _invited.insert(client);
 }
-void Channel::uninvite_client(Client *client)
-{
+void Channel::uninvite_client(Client *client) {
   _invited_by_nick.erase(client->get_nickname());
   _invited.erase(client);
 }
-bool Channel::is_invited(Client *client) const
-{
+bool Channel::is_invited(Client *client) const {
   return _invited.find(client) != _invited.end();
 }
-Client *Channel::find_invited(const std::string &nickname) const
-{
+Client *Channel::find_invited(const std::string &nickname) const {
   std::map<std::string, Client *>::const_iterator it =
       _invited_by_nick.find(nickname);
 
-  if (it == _invited_by_nick.end())
-    return NULL;
+  if (it == _invited_by_nick.end()) return NULL;
   return it->second;
 }
 
@@ -320,57 +239,46 @@ void Channel::set_mode(ModeFlag flag, bool value) { _mode.set(flag, value); }
 const std::string &Channel::get_key() const { return _key; }
 void Channel::set_key(const std::string &key) { _key = key; }
 
-bool Channel::full() const
-{
+bool Channel::full() const {
   return _mode.test(CLIENT_LIMIT_SET) && _max_clients <= _clients.size();
 }
 bool Channel::empty() const { return _clients.empty(); }
-std::size_t Channel::get_max_clients() const
-{
-  if (_mode.test(CLIENT_LIMIT_SET) == false)
-  {
-    return static_cast<std::size_t>(-1); // unlimited
+std::size_t Channel::get_max_clients() const {
+  if (_mode.test(CLIENT_LIMIT_SET) == false) {
+    return static_cast<std::size_t>(-1);  // unlimited
   }
   return _max_clients;
 }
-void Channel::set_max_clients(std::size_t max_clients)
-{
+void Channel::set_max_clients(std::size_t max_clients) {
   _mode.set(CLIENT_LIMIT_SET);
   _max_clients = max_clients;
 }
 
-void Channel::set_topic(const std::string &topic, Client *topic_set_by)
-{
+void Channel::set_topic(const std::string &topic, Client *topic_set_by) {
   _topic = topic;
   _topic_set_by = topic_set_by;
   _topic_set_time = std::time(NULL);
 }
 const std::string &Channel::get_topic() const { return _topic; }
 Client *Channel::get_topic_set_by() const { return _topic_set_by; }
-const std::time_t &Channel::get_topic_set_time() const
-{
+const std::time_t &Channel::get_topic_set_time() const {
   return _topic_set_time;
 }
 
 const std::string &Channel::get_name() const { return _name; }
 
-bool Channel::operator==(const Channel &other) const
-{
+bool Channel::operator==(const Channel &other) const {
   return _name == other._name;
 }
-bool Channel::operator!=(const Channel &other) const
-{
+bool Channel::operator!=(const Channel &other) const {
   return _name != other._name;
 }
-bool Channel::operator<(const Channel &other) const
-{
+bool Channel::operator<(const Channel &other) const {
   return _name < other._name;
 }
-Channel &Channel::operator<<(const std::string &message)
-{
+Channel &Channel::operator<<(const std::string &message) {
   std::set<Client *>::iterator it = _clients.begin();
-  for (; it != _clients.end(); ++it)
-    **it << message;
+  for (; it != _clients.end(); ++it) **it << message;
   return *this;
 }
 
