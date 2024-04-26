@@ -1,5 +1,8 @@
 # ft_irc
 
+![Pipeline](/assets/pipeline.png)
+
+
 ## 기본 연결 흐름
 
 1. 클라이언트는 IRC 서버와 6667(기본) 또는 지정된 포트로 TCP 연결을 설정합니다.
